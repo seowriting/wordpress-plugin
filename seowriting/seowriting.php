@@ -441,6 +441,7 @@ if (!class_exists('SEOWriting')) {
         }
 
         private function publishPost($user_id, $data) {
+            $maxExecutionTime = ini_get( 'max_execution_time' );
             @set_time_limit(120);
 
             $post_status = (isset($data['publish']) && intval($data['publish']) == 1) ? 'publish' : 'draft';
@@ -494,6 +495,8 @@ if (!class_exists('SEOWriting')) {
             include_once(__DIR__.'/classes/post-meta.php');
             $pm = new \SEOWriting\PostMeta($post_id);
             $pm->set($data);
+
+            @set_time_limit($maxExecutionTime);
 
             return [
                 'result' => 1,
