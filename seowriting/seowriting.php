@@ -205,10 +205,10 @@ if (!class_exists('SEOWriting')) {
                         'version' => $this->version,
                     ];
 
-                    if ($action == 'post') {
+                    if ($action === 'post') {
                         $rs = $this->publishPost($settings['user_id'], $post);
                     }
-                    elseif (($action == 'connect') && isset($post['api_key'])) {
+                    elseif (($action === 'connect') && isset($post['api_key'])) {
                         $this->setSettings([
                             'api_key' => sanitize_text_field($post['api_key']),
                         ]);
@@ -217,13 +217,13 @@ if (!class_exists('SEOWriting')) {
                             'categories' => $this->getCategories()
                         ];
                     }
-                    elseif ($action == 'disconnect') {
+                    elseif ($action === 'disconnect') {
                         $this->deleteSettings();
                         $rs = [
                             'result' => 1
                         ];
                     }
-                    elseif ($action == 'get_categories') {
+                    elseif ($action === 'get_categories') {
                         $rs = [
                             'result' => 1,
                             'categories' => $this->getCategories()
@@ -267,7 +267,7 @@ if (!class_exists('SEOWriting')) {
                 $content = get_the_content( null, false, $post_id );
                 $shema_type = get_option('sw_shema_type');
                 $qa = $this->faqFilter($content);
-                if(!empty($shema_type) && $shema_type == 'json' && $qa){
+                if(!empty($shema_type) && $shema_type === 'json' && $qa){
                     $questions = $qa[0];
                     $answers = $qa[1];
 
@@ -321,7 +321,7 @@ if (!class_exists('SEOWriting')) {
         {
             $shema_type = get_option('sw_shema_type');
             $qa = $this->faqFilter($content);
-            if(is_single() && (empty($shema_type) || $shema_type == 'microdata') && $qa){
+            if(is_single() && (empty($shema_type) || $shema_type === 'microdata') && $qa){
                 $questions = $qa[0];
                 $answers = $qa[1];
                 $title = $qa[2];
@@ -444,10 +444,10 @@ if (!class_exists('SEOWriting')) {
             $maxExecutionTime = ini_get( 'max_execution_time' );
             @set_time_limit(120);
 
-            $post_status = (isset($data['publish']) && intval($data['publish']) == 1) ? 'publish' : 'draft';
+            $post_status = (isset($data['publish']) && intval($data['publish']) === 1) ? 'publish' : 'draft';
             $post_time = time();
 
-            if (($post_status == 'publish') && isset($data['post_time'])) {
+            if (($post_status === 'publish') && isset($data['post_time'])) {
                 $new_post_time = intval($data['post_time']);
                 if ($new_post_time > $post_time) {
                     $post_time = $new_post_time;

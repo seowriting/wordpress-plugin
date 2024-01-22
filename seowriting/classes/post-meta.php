@@ -27,7 +27,7 @@ class PostMeta {
     private function setValue($k, $v, $check_key=false) {
         if (!$check_key || is_null($this->meta_keys) || in_array($k, $this->meta_keys)) {
             $v = wp_strip_all_tags($v, true);
-            if (strlen($v) == 0) {
+            if (strlen($v) === 0) {
                 $_old_value = get_post_meta($this->post_id, $k, true);
                 if (!empty($_old_value)) {
                     delete_post_meta($this->post_id, $k);

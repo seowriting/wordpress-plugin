@@ -104,7 +104,7 @@ class APIClient {
         $result = wp_remote_retrieve_body($response);
         $data = @json_decode($result, true);
         if (is_array($data) && isset($data['status'])) {
-            if ($data['status'] == 1) {
+            if ($data['status'] === 1) {
                 $this->plugin->setSettings([
                     'user_id' => $params['user_id'],
                     'name' => $params['user_email'],
@@ -186,7 +186,7 @@ class APIClient {
                 if (@file_put_contents($tmp_name, wp_remote_retrieve_body($response))) {
                     $image_size = @getimagesize($tmp_name);
 
-                    if ($image_size && ($image_size['mime'] == $content_type)) {
+                    if ($image_size && ($image_size['mime'] === $content_type)) {
                         $name = basename($url);
                         if (strlen($filename) > 0) {
                             $filename = trim($filename, " \n\r\t.?!;:/\\#");

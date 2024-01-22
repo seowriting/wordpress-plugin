@@ -69,10 +69,10 @@ class SettingsForm {
         $res = isset($_GET['m']) ? sanitize_text_field($_GET['m']) : '';
         $message = '';
 
-        if ($res == 'success') {
+        if ($res === 'success') {
             $message = $this->getMessageBox(false, 'Connection established');
         }
-        elseif ($res == 'failure') {
+        elseif ($res === 'failure') {
             $message = $this->getMessageBox(true,
                 'Authorisation Error',
                 (isset($_GET['t']) ? sanitize_text_field($_GET['t']) : '')
@@ -92,7 +92,7 @@ class SettingsForm {
 
     public function render_page() {
 
-        
+
         require_once $this->plugin->plugin_path . 'tpl/settings/entry.tpl.php';
     }
 
@@ -155,7 +155,7 @@ class SettingsForm {
         $ret = [
             'success' => false
         ];
-        if ($action == 'connect') {
+        if ($action === 'connect') {
             if ($this->plugin->isConnected()) {
                 $ret['success'] = true;
                 $ret['msg'] = $this->getMessageBox(false, 'Connection established');
@@ -173,7 +173,7 @@ class SettingsForm {
                 ]);
 
                 if (isset($result['status'])) {
-                    if ($result['status'] == 1) {
+                    if ($result['status'] === 1) {
                         $ret['success'] = true;
                         $ret['auth_url'] = $result['auth_url'];
                     }
@@ -183,7 +183,7 @@ class SettingsForm {
                 }
             }
         }
-        elseif ($action == 'disconnect') {
+        elseif ($action === 'disconnect') {
             if ($this->plugin->isConnected()) {
                 $result = $this->plugin->disconnect();
             }
@@ -191,7 +191,7 @@ class SettingsForm {
                 $result = ['status' => 1];
             }
 
-            if ($result['status'] == 1) {
+            if ($result['status'] === 1) {
                 $ret['success'] = true;
                 $ret['msg'] = $this->getMessageBox(false, 'Connection terminated');
                 $ret['body'] = __('Your site is not connected to SEOWRITING.AI', 'seowriting');
@@ -210,7 +210,7 @@ class SettingsForm {
         $html .= '<select class="form-control" name="'. $name .'">';
         foreach ($options as $key => $opt) {
             $selectedOpt = '';
-            if (!empty($selectedVal) && $selectedVal == $key) {
+            if (!empty($selectedVal) && $selectedVal === $key) {
                 $selectedOpt = 'selected="selected"';
             }
             $html .= '<option value="' . $key . '" ' . $selectedOpt . '>' . $opt . '</option>';
