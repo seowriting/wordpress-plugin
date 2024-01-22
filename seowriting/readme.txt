@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.4.2
 Requires at least: 4.9
 Requires PHP: 5.6
-Stable tag: 1.1.8
+Stable tag: 1.1.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,10 @@ SEOWriting's powerful plugin allows you to seamlessly publish your content direc
 Save time and enhance the quality of your content with SEOWriting.
 
 == Changelog ==
+
+= 1.1.9 (2024/01/22) =
+* Update: readme.txt
+* Fix: Comments on the code sent by the plugin moderation team
 
 = 1.1.8 =
 * Publish content from SEOWriting to WordPress.
