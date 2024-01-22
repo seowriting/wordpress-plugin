@@ -20,6 +20,8 @@ SEOWriting's powerful plugin allows you to seamlessly publish your content direc
 
 Save time and enhance the quality of your content with SEOWriting.
 
+The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowriting.ai/). The Service is provided under the terms of [Terms of Service](https://seowriting.ai/terms-of-service) and [Privacy Policy](https://seowriting.ai/privacy-policy).
+
 == Changelog ==
 
 = 1.1.9 (2024/01/22) =
