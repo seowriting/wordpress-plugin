@@ -8,7 +8,7 @@ Stable tag: 1.1.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI writing tool for 1-click SEO-optimized articles, blog posts & affiliate content. Available in 48 languages, auto-posted to WordPress with AI Images
+AI writing tool for 1-click SEO-optimized articles, blog posts & affiliate content. Available in 48 languages, auto-posted to WordPress with AI Images.
 
 == Description ==
 
