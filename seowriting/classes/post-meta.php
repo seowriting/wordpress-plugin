@@ -4,6 +4,7 @@ namespace SEOWriting;
 use DOMDocument;
 
 require_once(ABSPATH.'wp-admin/includes/plugin.php');
+include_once __DIR__ . '/../utils.php';
 
 class PostMeta {
     private $post_id;
@@ -113,14 +114,16 @@ class PostMeta {
                     }
                 }
             }
-            update_post_meta($this->post_id, '_elementor_data', json_encode($elementorSettings));
+            update_post_meta($this->post_id, '_elementor_data', json_encode_unescaped($elementorSettings));
         }
-        elseif (is_plugin_active(self::PLUGIN_YOAST)) {
+
+        if (is_plugin_active(self::PLUGIN_YOAST)) {
             $this->setValue('_yoast_wpseo_title', $title);
             $this->setValue('_yoast_wpseo_metadesc', $description);
             $this->setValue('_yoast_wpseo_focuskw', $main_keyword);
         }
-        elseif (is_plugin_active(self::PLUGIN_ALL_IN_ONE)) {
+
+        if (is_plugin_active(self::PLUGIN_ALL_IN_ONE)) {
             $this->setValue('_aioseo_title', $title);
             $this->setValue('_aioseo_description', $description);
             $this->setValue('_aioseo_keywords', $main_keyword);
@@ -137,17 +140,20 @@ class PostMeta {
             catch (\Exception $e) {
             }
         }
-        elseif (is_plugin_active(self::PLUGIN_RANK_MATH)) {
+
+        if (is_plugin_active(self::PLUGIN_RANK_MATH)) {
             $this->setValue('rank_math_title', $title);
             $this->setValue('rank_math_description', $description);
             $this->setValue('rank_math_focus_keyword', $main_keyword);
         }
-        elseif (is_plugin_active(self::PLUGIN_SEOPRESS)) {
+
+        if (is_plugin_active(self::PLUGIN_SEOPRESS)) {
             $this->setValue('_seopress_titles_title', $title);
             $this->setValue('_seopress_titles_desc', $description);
             $this->setValue('_seopress_analysis_target_kw', $main_keyword);
         }
-        elseif (is_plugin_active(self::PLUGIN_SEO_FRAMEWORK)) {
+
+        if (is_plugin_active(self::PLUGIN_SEO_FRAMEWORK)) {
             $this->setValue('_genesis_title', $title);
             $this->setValue('_genesis_description', $description);
         }

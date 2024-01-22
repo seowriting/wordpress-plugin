@@ -1,6 +1,8 @@
 <?php
 namespace SEOWriting;
 
+include_once __DIR__ . '/../utils.php';
+
 class APIClient {
     /**
      * @var \SEOWriting
@@ -62,12 +64,11 @@ class APIClient {
         ];
 
         if (!empty($body)) {
-            $args['body'] = @json_encode($body);
+            $args['body'] = json_encode_unescaped($body);
         }
 
         $url = $this->base_url.$endpoint;
 
-        // @phpstan-ignore-next-line
         return wp_remote_request($url, $args);
     }
 

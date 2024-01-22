@@ -22,6 +22,8 @@ if (!defined('WPINC')) {
     die;
 }
 
+include_once __DIR__ . '/utils.php';
+
 if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
@@ -93,7 +95,7 @@ if (!class_exists('SEOWriting')) {
         public function restWebhook($request) {
             $rs = $request->has_valid_params();
             if (is_wp_error($rs)) {
-                $this->writeLog('restWebhook: ' . json_encode($rs->get_error_messages(), JSON_UNESCAPED_UNICODE));
+                $this->writeLog('restWebhook: ' . json_encode_unescaped($rs->get_error_messages()));
                 return new WP_REST_Response(['message' => $rs->get_error_messages()], 400);
             }
 
@@ -374,7 +376,7 @@ if (!class_exists('SEOWriting')) {
                             $api->deleteImage($file);
 
                             if (is_wp_error($id)) {
-                                $this->writeLog('media_handle_sideload(' . $file . ', ' . $post_id . '): ' . json_encode($id->get_error_messages(), JSON_UNESCAPED_UNICODE));
+                                $this->writeLog('media_handle_sideload(' . $file . ', ' . $post_id . '): ' . json_encode_unescaped($id->get_error_messages()));
                             }
                             else {
                                 $attachment_id = $id;
