@@ -62,51 +62,55 @@ class PostMeta {
             $dom->loadHTML('<div>' . $data['html'] . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
             $elementorSettings = [];
             $id = 1;
-            foreach ($dom->documentElement->childNodes as $element) {
-                $tagName = $element->tagName;
-                if (!is_null($tagName)) {
-                    if (isset($hNames[$tagName])) {
-                        $tagWidgetType = 'heading';
-                        $tagSettings = [
-                            'title' => $element->textContent,
-                        ];
-                        if ($tagName !== 'h1') {
-                            $tagSettings['header_size'] = $tagName;
+            $elements = is_null($dom->documentElement) ? null : $dom->documentElement->childNodes;
+            // @phpstan-ignore-next-line
+            if (is_array($elements)) {
+                foreach ($elements as $element) {
+                    $tagName = $element->tagName;
+                    if (!is_null($tagName)) {
+                        if (isset($hNames[$tagName])) {
+                            $tagWidgetType = 'heading';
+                            $tagSettings = [
+                                'title' => $element->textContent,
+                            ];
+                            if ($tagName !== 'h1') {
+                                $tagSettings['header_size'] = $tagName;
+                            }
+                        } elseif ($tagName === 'img') {
+                            $src = $element->getAttribute('src');
+                            $tagWidgetType = 'image';
+                            $tagSettings = [
+                                'image' => [
+                                    'url' => $this->elementorReplace($src),
+                                    'id' => $data['images'][$src],
+                                    'size' => '',
+                                    'alt' => $element->getAttribute('alt'),
+                                    'source' => 'library',
+                                ]
+                            ];
+                        } else {
+                            $tagWidgetType = 'text-editor';
+                            $tagSettings = [
+                                'editor' => $this->elementorReplace($dom->saveHTML($element))
+                            ];
                         }
-                    } elseif ($tagName === 'img') {
-                        $src = $element->getAttribute('src');
-                        $tagWidgetType = 'image';
-                        $tagSettings = [
-                            'image' => [
-                                'url' => $this->elementorReplace($src),
-                                'id' => $data['images'][$src],
-                                'size' => '',
-                                'alt' => $element->getAttribute('alt'),
-                                'source' => 'library',
-                            ]
+                        $elementorSettings[] = [
+                            'id' => (string)$id,
+                            'elType' => 'container',
+                            'settings' => [],
+                            'elements' => [
+                                [
+                                    'id' => (string)++$id,
+                                    'elType' => 'widget',
+                                    'settings' => $tagSettings,
+                                    'elements' => [],
+                                    'widgetType' => $tagWidgetType,
+                                ]
+                            ],
+                            'isInner' => false,
                         ];
-                    } else {
-                        $tagWidgetType = 'text-editor';
-                        $tagSettings = [
-                            'editor' => $this->elementorReplace($dom->saveHTML($element))
-                        ];
+                        $id++;
                     }
-                    $elementorSettings[] = [
-                        'id' => (string)$id,
-                        'elType' => 'container',
-                        'settings' => [],
-                        'elements' => [
-                            [
-                                'id' => (string)++$id,
-                                'elType' => 'widget',
-                                'settings' => $tagSettings,
-                                'elements' => [],
-                                'widgetType' => $tagWidgetType,
-                            ]
-                        ],
-                        'isInner' => false,
-                    ];
-                    $id++;
                 }
             }
             update_post_meta($this->post_id, '_elementor_data', json_encode($elementorSettings));
@@ -123,14 +127,14 @@ class PostMeta {
             try {
                 $path = WP_PLUGIN_DIR.'/'.self::PLUGIN_ALL_IN_ONE;
                 include_once($path);
-
+                // @phpstan-ignore-next-line
                 \AIOSEO\Plugin\Common\Models\Post::savePost($this->post_id, [
                     'title' => $title,
                     'description' => $description,
                     'keywords' => $main_keyword
                 ]);
             }
-            catch (Exception $e) {
+            catch (\Exception $e) {
             }
         }
         elseif (is_plugin_active(self::PLUGIN_RANK_MATH)) {

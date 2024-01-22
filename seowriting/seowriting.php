@@ -93,7 +93,7 @@ if (!class_exists('SEOWriting')) {
         public function restWebhook($request) {
             $rs = $request->has_valid_params();
             if (is_wp_error($rs)) {
-                $this->writeLog('restWebhook: '.$rs->get_error_messages());
+                $this->writeLog('restWebhook: ' . json_encode($rs->get_error_messages(), JSON_UNESCAPED_UNICODE));
                 return new WP_REST_Response(['message' => $rs->get_error_messages()], 400);
             }
 
@@ -190,8 +190,8 @@ if (!class_exists('SEOWriting')) {
         }
 
         /**
-         * @param array $post
-         * @return array|null
+         * @param array<string, string> $post
+         * @return array<string, string>|null
          */
         private function webhook($post) {
             $settings = $this->getSettings();
@@ -311,7 +311,9 @@ if (!class_exists('SEOWriting')) {
                 preg_match_all('#<h3>(.*?)</h3>#s', $fhtml, $questions);
                 $questions = isset($questions[1]) ? $questions[1] : [];
                 $answers = preg_split("#<h3>(.*?)</h3>#s", $fhtml);
-                array_shift($answers);
+                if (is_array($answers)) {
+                    array_shift($answers);
+                }
                 return [$questions, $answers, $title];
             }
             return false;
@@ -372,8 +374,7 @@ if (!class_exists('SEOWriting')) {
                             $api->deleteImage($file);
 
                             if (is_wp_error($id)) {
-                                // fixme: $file and $id->get_error_messages() is arrays
-                                $this->writeLog('media_handle_sideload('.$file.', '.$post_id.'): '.$id->get_error_messages());
+                                $this->writeLog('media_handle_sideload(' . $file . ', ' . $post_id . '): ' . json_encode($id->get_error_messages(), JSON_UNESCAPED_UNICODE));
                             }
                             else {
                                 $attachment_id = $id;
@@ -419,7 +420,7 @@ if (!class_exists('SEOWriting')) {
 
         /**
          * @param string $category
-         * @return array
+         * @return array<int>
          */
         private function getPostCategory($category) {
             if (strlen($category) > 0) {
@@ -429,7 +430,7 @@ if (!class_exists('SEOWriting')) {
                 $result = [];
                 foreach ($categories as $cat) {
                     if (in_array($cat['id'], $ids)) {
-                        $result[] = $cat['id'];
+                        $result[] = (int)$cat['id'];
                     }
                 }
 
@@ -441,7 +442,7 @@ if (!class_exists('SEOWriting')) {
         }
 
         private function publishPost($user_id, $data) {
-            $maxExecutionTime = ini_get( 'max_execution_time' );
+            $maxExecutionTime = (int)ini_get( 'max_execution_time' );
             @set_time_limit(120);
 
             $post_status = (isset($data['publish']) && intval($data['publish']) === 1) ? 'publish' : 'draft';
@@ -506,7 +507,7 @@ if (!class_exists('SEOWriting')) {
         }
 
         /**
-         * @return array
+         * @return array<array<string, int|string>>
          */
         public function getCategories() {
             $categories = get_categories([

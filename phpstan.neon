@@ -1,0 +1,19 @@
+parameters:
+    level: 9
+    checkGenericClassInNonGenericObjectType: false
+    treatPhpDocTypesAsCertain: false
+    scanFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+    paths:
+        - seowriting
+    ignoreErrors:
+        # WP
+        - '#Constant [A-Z0-9\\_]+ not found\.#'
+        # `this` in templates
+        - '#Variable \$this might not be defined.#'
+        # PHP 5.6 compatibility
+        - '#[a-zA-Z0-9\\_] no type specified\.#'
+        - '#[a-zA-Z0-9\\_] no return type specified\.#'
+        - '#^Cannot access offset#'
+    parallel:
+        maximumNumberOfProcesses: 12
