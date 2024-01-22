@@ -1,7 +1,7 @@
 === SEOWriting ===
 Contributors: SEOWriting
 Tags: seo writing, AI tool, AI writing, generation text
-Tested up to: 6.2
+Tested up to: 6.4.2
 Requires at least: 4.9
 Requires PHP: 5.6
 Stable tag: 1.1.8
@@ -16,7 +16,7 @@ AI writing tool for 1-click SEO-optimized articles, blog posts & affiliate conte
 
 With SEOWriting, users can easily generate high-quality articles, blog posts, marketing copy, SEO content, affiliate reviews, and much more.
 
-SEOWriting's powerful plugin allows you to seamlessly publish your content directly to your WordPress website. The installation process is quick and easy, and you can find a step-by-step guide [here](https://docs.seowriting.ai/article/wordpress-integration "Plugin installation guide"). 
+SEOWriting's powerful plugin allows you to seamlessly publish your content directly to your WordPress website. The installation process is quick and easy, and you can find a step-by-step guide [here](https://docs.seowriting.ai/article/wordpress-integration "Plugin installation guide").
 
 Save time and enhance the quality of your content with SEOWriting.
 
