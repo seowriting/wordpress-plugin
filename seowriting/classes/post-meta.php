@@ -10,12 +10,13 @@ class PostMeta {
     private $post_id;
     private $meta_keys = null;
 
-    const PLUGIN_ELEMENTOR = 'elementor/elementor.php';
-    const PLUGIN_YOAST = 'wordpress-seo/wp-seo.php';
     const PLUGIN_ALL_IN_ONE = 'all-in-one-seo-pack/all_in_one_seo_pack.php';
+    const PLUGIN_ELEMENTOR = 'elementor/elementor.php';
     const PLUGIN_RANK_MATH = 'seo-by-rank-math/rank-math.php';
-    const PLUGIN_SEOPRESS = 'wp-seopress/seopress.php';
     const PLUGIN_SEO_FRAMEWORK = 'autodescription/autodescription.php';
+    const PLUGIN_SEOPRESS = 'wp-seopress/seopress.php';
+    const PLUGIN_SQUIRRLY_SEO = 'squirrly-seo/squirrly.php';
+    const PLUGIN_YOAST = 'wordpress-seo/wp-seo.php';
 
     public function __construct($post_id) {
         $this->post_id = $post_id;
@@ -157,5 +158,12 @@ class PostMeta {
             $this->setValue('_genesis_title', $title);
             $this->setValue('_genesis_description', $description);
         }
+
+        if (is_plugin_active(self::PLUGIN_SQUIRRLY_SEO)) {
+            $this->setValue('_sq_description', $description);
+            $this->setValue('_sq_title', $title);
+            $this->setValue('_sq_keywords', $main_keyword);
+        }
+
     }
 }
