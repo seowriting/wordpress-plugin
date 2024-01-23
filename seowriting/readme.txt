@@ -24,6 +24,9 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
+= 1.2.2 (2024/01/23) =
+* Feature: Internal changes to create two types of releases: a) for all clients b) for internal testing
+
 = 1.2.1 (2024/01/23) =
 * Feature: Added utm-tags to the readme.txt file
 
