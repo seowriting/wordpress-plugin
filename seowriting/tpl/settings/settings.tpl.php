@@ -6,7 +6,7 @@ $this->form_action();
 ?>
 <div class="seowriting_msg"><?php echo $this->showNotifications(); ?></div>
 <h3 class="seowriting-title-short">
-	<?php echo __('Plagin Settings', 'seowriting'); ?>
+	<?php echo __('Plugin Settings', 'seowriting'); ?>
 </h3>
 <table class="wp-list-table striped seowriting-table">
 	<tbody>
