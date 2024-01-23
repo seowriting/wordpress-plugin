@@ -24,6 +24,11 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
+= 1.2.3 (2024/01/23) =
+* Feature: fillable `focus keyphrase`, `og:title` and `og:description` for the `All in one SEO` plugin
+* Feature: fillable `og:title`, `og:description`, `twitter:title`, `twitter:description` for the `The SEO Framework` plugin
+* Feature: fillable `og:title`, `og:description`, `twitter:title`, `twitter:description` for the `SEOPress` plugin
+
 = 1.2.2 (2024/01/23) =
 * Feature: Internal changes to create two types of releases: a) for all clients b) for internal testing
 

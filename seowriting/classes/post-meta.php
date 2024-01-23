@@ -128,6 +128,9 @@ class PostMeta {
             $this->setValue('_aioseo_title', $title);
             $this->setValue('_aioseo_description', $description);
             $this->setValue('_aioseo_keywords', $main_keyword);
+            $this->setValue('_aioseo_og_title', $title);
+            $this->setValue('_aioseo_og_description', $description);
+
             try {
                 $path = WP_PLUGIN_DIR.'/'.self::PLUGIN_ALL_IN_ONE;
                 include_once($path);
@@ -135,10 +138,19 @@ class PostMeta {
                 \AIOSEO\Plugin\Common\Models\Post::savePost($this->post_id, [
                     'title' => $title,
                     'description' => $description,
-                    'keywords' => $main_keyword
+                    'keywords' => $main_keyword,
+                    'keyphrases' => [
+                        'focus' => [
+                            'keyphrase' => $main_keyword,
+                            'analysis' => [],
+                        ],
+                        'additional' => [],
+                    ],
+                    'og_title' => $title,
+                    'og_description' => $description,
                 ]);
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
+
             }
         }
 
@@ -152,11 +164,19 @@ class PostMeta {
             $this->setValue('_seopress_titles_title', $title);
             $this->setValue('_seopress_titles_desc', $description);
             $this->setValue('_seopress_analysis_target_kw', $main_keyword);
+            $this->setValue('_seopress_social_fb_title', $title);
+            $this->setValue('_seopress_social_fb_desc', $description);
+            $this->setValue('_seopress_social_twitter_title', $title);
+            $this->setValue('_seopress_social_twitter_desc', $description);
         }
 
         if (is_plugin_active(self::PLUGIN_SEO_FRAMEWORK)) {
             $this->setValue('_genesis_title', $title);
             $this->setValue('_genesis_description', $description);
+            $this->setValue('_open_graph_title', $title );
+            $this->setValue('_open_graph_description', $description);
+            $this->setValue('_twitter_title', $title);
+            $this->setValue('_twitter_description', $description);
         }
 
         if (is_plugin_active(self::PLUGIN_SQUIRRLY_SEO)) {

@@ -1,5 +1,4 @@
 .idea/
-seowriting.zip
-seowriting-beta.zip
+*.zip
 tmp/
 release.sh
