@@ -1,6 +1,8 @@
 <?php
 namespace SEOWriting;
 
+defined( 'WPINC' ) || exit;
+
 include_once __DIR__ . '/../utils.php';
 
 class APIClient {

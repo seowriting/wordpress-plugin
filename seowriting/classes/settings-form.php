@@ -1,6 +1,8 @@
 <?php
 namespace SEOWriting;
 
+defined( 'WPINC' ) || exit;
+
 class SettingsForm {
     /**
      * @var \SEOWriting
@@ -124,7 +126,7 @@ class SettingsForm {
         if (!current_user_can('manage_options')) {
             print 'You can\'t manage options';
             exit;
-    }
+        }
 
         $keys = ['sw_shema_type'];
         $fields_to_update = [];
@@ -139,6 +141,7 @@ class SettingsForm {
             exit;
         }
     }
+
     private function db_update_options($group)
     {
         foreach ($group as $key => $fields) {

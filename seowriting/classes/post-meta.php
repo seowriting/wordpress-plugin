@@ -3,6 +3,8 @@ namespace SEOWriting;
 
 use DOMDocument;
 
+defined( 'WPINC' ) || exit;
+
 require_once(ABSPATH.'wp-admin/includes/plugin.php');
 include_once __DIR__ . '/../utils.php';
 

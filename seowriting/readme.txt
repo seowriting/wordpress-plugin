@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.4.2
 Requires at least: 4.9
 Requires PHP: 5.6
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,9 @@ Save time and enhance the quality of your content with SEOWriting.
 The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin). The Service is provided under the terms of [Terms of Service](https://seowriting.ai/terms-of-service?utm_source=wp_plugin) and [Privacy Policy](https://seowriting.ai/privacy-policy?utm_source=wp_plugin).
 
 == Changelog ==
+
+= 1.3.1 (2024/01/24) =
+* Fix: common way of defining the context of a file call method
 
 = 1.3.0 (2024/01/24) =
 * Feature: possibility to create `post_excerpt` when sending data from seowriting.ai service
