@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.2.3
+ * Version:           1.3.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/
  * License:           GPL-2.0 or later
@@ -28,7 +28,7 @@ if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.2.3';
+        public $version = '1.3.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -90,7 +90,7 @@ if (!class_exists('SEOWriting')) {
 
         /**
          * @param WP_REST_Request $request
-         * @return WP_REST_Response
+         * @return WP_REST_Response|WP_Error
          */
         public function restWebhook($request) {
             $rs = $request->has_valid_params();
@@ -108,7 +108,11 @@ if (!class_exists('SEOWriting')) {
             }
 
             $ret = $this->webhook($request->get_json_params());
-            return new WP_REST_Response($ret);
+            return is_array($ret)
+                ? new WP_REST_Response($ret)
+                : new WP_REST_Response([
+                    'message' => 'You do not have permission to access this resource.',
+                ], 400);
         }
 
         public function adminSettingsLink($links) {
@@ -466,6 +470,9 @@ if (!class_exists('SEOWriting')) {
                 'post_author' => $user_id,
                 'post_type' => 'post',
                 'post_category' => $this->getPostCategory(isset($data['category']) ? sanitize_text_field($data['category']) : ''),
+                'post_excerpt' => isset($data['excerpt']) && (int)$data['excerpt'] === 1
+                    ? (isset($data['description']) ? sanitize_text_field($data['description']) : '')
+                    : '',
             ];
 
             if (isset($data['post_slug'])) {

@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.4.2
 Requires at least: 4.9
 Requires PHP: 5.6
-Stable tag: 1.2.3
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,23 +24,26 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
+= 1.3.0 (2024/01/24) =
+* Feature: possibility to create `post_excerpt` when sending data from seowriting.ai service
+
 = 1.2.3 (2024/01/23) =
 * Feature: fillable `focus keyphrase`, `og:title` and `og:description` for the `All in one SEO` plugin
 * Feature: fillable `og:title`, `og:description`, `twitter:title`, `twitter:description` for the `The SEO Framework` plugin
 * Feature: fillable `og:title`, `og:description`, `twitter:title`, `twitter:description` for the `SEOPress` plugin
 
 = 1.2.2 (2024/01/23) =
-* Feature: Internal changes to create two types of releases: a) for all clients b) for internal testing
+* Feature: internal changes to create two types of releases: a) for all clients b) for internal testing
 
 = 1.2.1 (2024/01/23) =
-* Feature: Added utm-tags to the readme.txt file
+* Feature: added utm-tags to the readme.txt file
 
 = 1.2.0 (2024/01/23) =
-* Feature: Meta tags support for `Squirrly SEO (Newton)` plugin
+* Feature: meta tags support for `Squirrly SEO (Newton)` plugin
 
 = 1.1.9 (2024/01/22) =
 * Update: readme.txt
-* Fix: Comments on the code sent by the plugin moderation team
+* Fix: comments on the code sent by the plugin moderation team
 
 = 1.1.8 =
 * Publish content from SEOWriting to WordPress.
