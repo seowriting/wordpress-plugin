@@ -68,53 +68,61 @@ class PostMeta {
             $id = 1;
             $elements = is_null($dom->documentElement) ? null : $dom->documentElement->childNodes;
             // @phpstan-ignore-next-line
-            if (is_array($elements)) {
+            if (!is_null($elements)) {
                 foreach ($elements as $element) {
                     $tagName = $element->tagName;
-                    if (!is_null($tagName)) {
-                        if (isset($hNames[$tagName])) {
-                            $tagWidgetType = 'heading';
+                    if (is_null($tagName)) {
+                        continue;
+                    }
+                    if (isset($hNames[$tagName])) {
+                        $tagWidgetType = 'heading';
+                        $tagSettings = [
+                            'title' => $element->textContent,
+                        ];
+                        if ($tagName !== 'h1') {
+                            $tagSettings['header_size'] = $tagName;
+                        }
+                    } elseif ($tagName === 'img') {
+                        $src = $element->getAttribute('src');
+                        $tagWidgetType = 'image';
+                        $tagSettings = [
+                            'image' => [
+                                'url' => $this->elementorReplace($src),
+                                'id' => $data['images'][$src],
+                                'size' => '',
+                                'alt' => $element->getAttribute('alt'),
+                                'source' => 'library',
+                            ]
+                        ];
+                    } else {
+                        if ($tagName === 'p' && substr($element->textContent, 0, 20) === 'https://www.youtube.com') {
+                            $tagWidgetType = 'video';
                             $tagSettings = [
-                                'title' => $element->textContent,
-                            ];
-                            if ($tagName !== 'h1') {
-                                $tagSettings['header_size'] = $tagName;
-                            }
-                        } elseif ($tagName === 'img') {
-                            $src = $element->getAttribute('src');
-                            $tagWidgetType = 'image';
-                            $tagSettings = [
-                                'image' => [
-                                    'url' => $this->elementorReplace($src),
-                                    'id' => $data['images'][$src],
-                                    'size' => '',
-                                    'alt' => $element->getAttribute('alt'),
-                                    'source' => 'library',
-                                ]
+                                'youtube_url' => $this->elementorReplace($element->textContent),
                             ];
                         } else {
                             $tagWidgetType = 'text-editor';
                             $tagSettings = [
-                                'editor' => $this->elementorReplace($dom->saveHTML($element))
+                                'editor' => $this->elementorReplace($dom->saveHTML($element)),
                             ];
                         }
-                        $elementorSettings[] = [
-                            'id' => (string)$id,
-                            'elType' => 'container',
-                            'settings' => [],
-                            'elements' => [
-                                [
-                                    'id' => (string)++$id,
-                                    'elType' => 'widget',
-                                    'settings' => $tagSettings,
-                                    'elements' => [],
-                                    'widgetType' => $tagWidgetType,
-                                ]
-                            ],
-                            'isInner' => false,
-                        ];
-                        $id++;
                     }
+                    $elementorSettings[] = [
+                        'id' => (string)$id,
+                        'elType' => 'container',
+                        'settings' => [],
+                        'elements' => [
+                            [
+                                'id' => (string)++$id,
+                                'elType' => 'widget',
+                                'settings' => $tagSettings,
+                                'elements' => [],
+                                'widgetType' => $tagWidgetType,
+                            ]
+                        ],
+                        'isInner' => false,
+                    ];
+                    $id++;
                 }
             }
             update_post_meta($this->post_id, '_elementor_data', json_encode_unescaped($elementorSettings));
