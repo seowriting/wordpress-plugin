@@ -59,7 +59,7 @@ if (!class_exists('SEOWriting')) {
             add_filter('wp_kses_allowed_html', [$this, 'ksesAllowedHtml'], 10, 2);
 
             add_filter( 'the_content', [$this, 'postContentFilter'], 20 );
-            add_action("wp_head", [$this, 'shemasHeadFilter'], 20 );
+            add_action("wp_head", [$this, 'schemasHeadFilter'], 20 );
         }
 
         public function ksesAllowedHtml($allowed, $context) {
@@ -265,13 +265,13 @@ if (!class_exists('SEOWriting')) {
             return $content;
         }
 
-        public function shemasHeadFilter( $content ){
+        public function schemasHeadFilter(){
             if ( is_single() ) {
                 $post_id  = get_queried_object_id();
                 $content = get_the_content( null, false, $post_id );
-                $shema_type = get_option('sw_shema_type');
+                $schemaType = get_option('sw_shema_type');
                 $qa = $this->faqFilter($content);
-                if(!empty($shema_type) && $shema_type === 'json' && $qa){
+                if(!empty($schemaType) && $schemaType === 'json' && $qa){
                     $questions = $qa[0];
                     $answers = $qa[1];
 
@@ -291,20 +291,19 @@ if (!class_exists('SEOWriting')) {
                             }
                         }
                     }
-                    $out = '<script type="application/ld+json">'
+                    echo '<script type="application/ld+json">'
                             .'{'
                             .'"@context": "https://schema.org",'
                             .'"@type": "FAQPage",'
                             .'"mainEntity": ['.$items.']'
                             .'}'
                             .'</script>';
-                    echo $out;
                 }
             }
         }
 
         private function faqFilter($html){
-            if (preg_match('#<section class="FAQPage">(.*?)</section>#s', $html, $matches)) {
+            if (preg_match('#<section><h2>FAQ</h2>(.*?)</section>#s', $html, $matches)) {
                 $title = '';
                 $fhtml = $matches[1];
                 if(preg_match('#<h2>(.*?)</h2>#s', $fhtml, $titles)){
@@ -312,11 +311,14 @@ if (!class_exists('SEOWriting')) {
                     $fhtml = str_replace($titles[0], '', $fhtml);
                 }
                 $fhtml = strip_tags($fhtml, "<h3><p><b>");
-                preg_match_all('#<h3>(.*?)</h3>#s', $fhtml, $questions);
+                preg_match_all('#<h3 itemprop="name">(.*?)</h3>#s', $fhtml, $questions);
                 $questions = isset($questions[1]) ? $questions[1] : [];
-                $answers = preg_split("#<h3>(.*?)</h3>#s", $fhtml);
+                $answers = preg_split('#<h3 itemprop="name">(.*?)</h3>#s', $fhtml);
                 if (is_array($answers)) {
                     array_shift($answers);
+                    foreach ($answers as $idx => $answer) {
+                        $answers[$idx] = trim(str_replace(PHP_EOL, "", strip_tags($answer)));
+                    }
                 }
                 return [$questions, $answers, $title];
             }
