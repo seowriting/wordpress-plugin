@@ -10,7 +10,7 @@
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
  * Version:           1.3.1
  * Author:            SEOWriting
- * Author URI:        https://seowriting.ai/
+ * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain:       seowriting
