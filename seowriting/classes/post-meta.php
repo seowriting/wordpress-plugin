@@ -67,9 +67,9 @@ class PostMeta {
             $elementorSettings = [];
             $id = 1;
             $elements = is_null($dom->documentElement) ? null : $dom->documentElement->childNodes;
-            // @phpstan-ignore-next-line
             if (!is_null($elements)) {
                 foreach ($elements as $element) {
+                    // @phpstan-ignore-next-line
                     $tagName = $element->tagName;
                     if (is_null($tagName)) {
                         continue;
@@ -83,6 +83,7 @@ class PostMeta {
                             $tagSettings['header_size'] = $tagName;
                         }
                     } elseif ($tagName === 'img') {
+                        // @phpstan-ignore-next-line
                         $src = $element->getAttribute('src');
                         $tagWidgetType = 'image';
                         $tagSettings = [
@@ -90,6 +91,7 @@ class PostMeta {
                                 'url' => $this->elementorReplace($src),
                                 'id' => $data['images'][$src],
                                 'size' => '',
+                                // @phpstan-ignore-next-line
                                 'alt' => $element->getAttribute('alt'),
                                 'source' => 'library',
                             ]
