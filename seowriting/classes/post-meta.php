@@ -97,7 +97,7 @@ class PostMeta {
                             ]
                         ];
                     } else {
-                        if ($tagName === 'p' && substr($element->textContent, 0, 20) === 'https://www.youtube.com') {
+                        if ($tagName === 'p' && substr($element->textContent, 0, 23) === 'https://www.youtube.com') {
                             $tagWidgetType = 'video';
                             $tagSettings = [
                                 'youtube_url' => $this->elementorReplace($element->textContent),
