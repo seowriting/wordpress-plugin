@@ -47,7 +47,7 @@ class PostMeta {
         return str_replace(
             ['"', '/', PHP_EOL],
             ['\"', '\/', ''],
-            $s,
+            $s
         );
     }
 

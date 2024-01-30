@@ -44,7 +44,7 @@ class SettingsForm {
             true
         );
         wp_enqueue_style('seowriting-admin-css',
-            plugins_url('../assets/css/admin.css', __FILE__),
+            plugins_url('../assets/css/admin.css', __FILE__)
         );
         wp_localize_script('seowriting-settings', 'ajax_var', array(
             'nonce' => wp_create_nonce('ajax-nonce')

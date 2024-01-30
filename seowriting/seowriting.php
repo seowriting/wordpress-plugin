@@ -97,7 +97,8 @@ if (!class_exists('SEOWriting')) {
                 return new WP_REST_Response(['message' => $rs->get_error_messages()], 400);
             }
 
-            if (!$request->is_json_content_type()) {
+            // WP 4.9 compatibility, do not edit
+            if ($request->get_content_type()['value'] !== 'application/json') {
                 $content_type = $request->get_content_type();
                 $error = 'Wrong Content-Type: '.(isset($content_type['value']) ? $content_type['value'] : '');
 
@@ -267,10 +268,18 @@ if (!class_exists('SEOWriting')) {
 
         public function schemasHeadFilter(){
             if ( is_single() ) {
-                $post_id  = get_queried_object_id();
-                $content = get_the_content( null, false, $post_id );
+
+                // WP 4.9 compatibility, do not edit
+                $post = get_post(get_queried_object_id());
+                if ($post instanceof WP_Post) {
+                    $content = $post->post_content;
+                } else {
+                    $content = '';
+                }
+
                 $schemaType = get_option('sw_shema_type');
                 $qa = $this->faqFilter($content);
+
                 if(!empty($schemaType) && $schemaType === 'json' && $qa){
                     $questions = $qa[0];
                     $answers = $qa[1];
