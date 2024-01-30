@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.4.1
+ * Version:           1.4.2
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -26,7 +26,7 @@ if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.4.1';
+        public $version = '1.4.2';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -98,9 +98,9 @@ if (!class_exists('SEOWriting')) {
             }
 
             // WP 4.9 compatibility, do not edit
-            if ($request->get_content_type()['value'] !== 'application/json') {
-                $content_type = $request->get_content_type();
-                $error = 'Wrong Content-Type: '.(isset($content_type['value']) ? $content_type['value'] : '');
+            $contentType = $request->get_content_type();
+            if (!is_array($contentType) || !isset($contentType['value']) || $contentType['value'] !== 'application/json') {
+                $error = 'Wrong Content-Type: '.(isset($contentType['value']) ? $contentType['value'] : '');
 
                 $this->writeLog('restWebhook: '.$error);
                 return new WP_REST_Response(['message' => $error], 400);
