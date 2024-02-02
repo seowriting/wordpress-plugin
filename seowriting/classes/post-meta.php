@@ -61,7 +61,9 @@ class PostMeta {
             $this->setValue('_elementor_template_type', 'wp-post');
             $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . self::PLUGIN_ELEMENTOR);
             $this->setValue('_elementor_version', $plugin_data['Version']);
+            libxml_use_internal_errors(true);
             $dom = new DOMDocument();
+            libxml_use_internal_errors(false);
             $hNames = ['h1' => true, 'h2' => true, 'h3' => true, 'h4' => true, 'h5' => true, 'h6' => true];
             $dom->loadHTML('<div>' . $data['html'] . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
             $elementorSettings = [];
