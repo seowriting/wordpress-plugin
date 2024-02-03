@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.4.5
+ * Version:           1.4.6
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -26,7 +26,7 @@ if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.4.5';
+        public $version = '1.4.6';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -38,6 +38,8 @@ if (!class_exists('SEOWriting')) {
         const REST_VERSION = 1;
         const LOG_SIZE_KB = 128;
         const MB_ENCODING = 'UTF-8';
+
+        const SCHEMA_TYPE_JSON = 'json';
 
         public function __construct() {
             $this->plugin_slug = plugin_basename(__DIR__);
@@ -58,8 +60,8 @@ if (!class_exists('SEOWriting')) {
             add_action('rest_api_init', [$this, 'initRest']);
             add_filter('wp_kses_allowed_html', [$this, 'ksesAllowedHtml'], 10, 2);
 
-            add_filter( 'the_content', [$this, 'postContentFilter'], 20 );
-            add_action("wp_head", [$this, 'schemasHeadFilter'], 20 );
+            add_filter( 'the_content', [$this, 'restoreSchemaSection'], 20 );
+            add_action("wp_head", [$this, 'printJSONLD'], 20 );
         }
 
         public function ksesAllowedHtml($allowed, $context) {
@@ -254,65 +256,81 @@ if (!class_exists('SEOWriting')) {
             exit();
         }
 
-        public function renderContent($content){
-            if (preg_match('#<section itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $content, $matches)) {
-                $fhtml = $matches[0];
-                $fhtml = str_replace('itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage"', 'class="FAQPage"', $fhtml);
-
-                $vowels = array(' itemscope', ' itemprop="mainEntity"', ' itemprop="text"', ' itemprop="name"', ' itemprop="acceptedAnswer"', ' itemtype="https://schema.org/Question"', ' itemtype="https://schema.org/Answer"');
-                $fhtml = str_replace($vowels, "", $fhtml);
-                $content = preg_replace('#<section itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $fhtml, $content);
+        /**
+         * @param $content
+         * @return string
+         */
+        private function clearSchemaSection($content){
+            if (preg_match('#<section itemscope="" itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $content, $matches)) {
+                $html = $matches[0];
+                $html = str_replace('itemscope="" itemprop="mainEntity" itemtype="https://schema.org/FAQPage"', 'class="schema-section"', $html);
+                $items = array(' itemscope', ' itemprop="mainEntity"', ' itemprop="text"', ' itemprop="name"', ' itemprop="acceptedAnswer"', ' itemtype="https://schema.org/Question"', ' itemtype="https://schema.org/Answer"');
+                $html = str_replace($items, "", $html);
+                $content = preg_replace('#<section itemscope="" itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $html, $content);
             }
+
             return $content;
         }
 
-        public function schemasHeadFilter(){
-            if ( is_single() ) {
-
-                // WP 4.9 compatibility, do not edit
-                $post = get_post(get_queried_object_id());
-                if ($post instanceof WP_Post) {
-                    $content = $post->post_content;
-                } else {
-                    $content = '';
-                }
-
-                $schemaType = get_option('sw_shema_type');
-                $qa = $this->faqFilter($content);
-
-                if(!empty($schemaType) && $schemaType === 'json' && $qa){
-                    $questions = $qa[0];
-                    $answers = $qa[1];
-
-                    $items = '';
-                    for ($i=0; $i < count($questions); $i++) {
-                        if(isset($answers[$i]) && isset($questions[$i])){
-                            $items .= '{'
-                                        .'"@type": "Question",'
-                                        .'"name": "'.$questions[$i].'",'
-                                        .'"acceptedAnswer": {'
-                                            .'"@type": "Answer",'
-                                            .'"text": "'.$answers[$i].'"'
-                                        .'}'
-                                       .'}';
-                            if($i != count($questions) - 1 ){
-                                $items .= ',';
-                            }
-                        }
-                    }
-                    echo '<script type="application/ld+json">'
-                            .'{'
-                            .'"@context": "https://schema.org",'
-                            .'"@type": "FAQPage",'
-                            .'"mainEntity": ['.$items.']'
-                            .'}'
-                            .'</script>';
-                }
-            }
+        /**
+         * @return bool
+         */
+        private function isJSONSchema() {
+            return get_option('sw_shema_type') === self::SCHEMA_TYPE_JSON;
         }
 
-        private function faqFilter($html){
-            if (preg_match('#<section><h2>FAQ</h2>(.*?)</section>#s', $html, $matches)) {
+        /**
+         * @return bool
+         */
+        private function isMicrodataSchema() {
+            return !$this->isJSONSchema();
+        }
+
+        public function printJSONLD(){
+            if ( !is_single() || !$this->isJSONSchema()) {
+                return;
+            }
+            // WP 4.9 compatibility, do not edit
+            $post = get_post(get_queried_object_id());
+            if ($post instanceof WP_Post) {
+                $content = $post->post_content;
+            } else {
+                return;
+            }
+            $qa = $this->qaList($content);
+            if (!is_array($qa) || !isset($qa[1])) {
+                return;
+            }
+            $questions = $qa[0];
+            $answers = $qa[1];
+            $count = count($questions);
+            $items = '';
+            for ($i = 0; $i < $count; $i++) {
+                if(isset($answers[$i]) && isset($questions[$i])) {
+                    $items .= '{'
+                        .'"@type": "Question",'
+                        .'"name": "'.$questions[$i].'",'
+                        .'"acceptedAnswer": {'
+                        .'"@type": "Answer",'
+                        .'"text": "'.$answers[$i].'"'
+                        .'}'
+                        .'}';
+                    if ($i != $count - 1 ){
+                        $items .= ',';
+                    }
+                }
+            }
+            echo '<script type="application/ld+json">'
+                .'{'
+                .'"@context": "https://schema.org",'
+                .'"@type": "FAQPage",'
+                .'"mainEntity": ['.$items.']'
+                .'}'
+                .'</script>';
+        }
+
+        private function qaList($html){
+            if (preg_match('#<section class="schema-section">(.*?)</section>#s', $html, $matches)) {
                 $title = '';
                 $fhtml = $matches[1];
                 if(preg_match('#<h2>(.*?)</h2>#s', $fhtml, $titles)){
@@ -320,9 +338,9 @@ if (!class_exists('SEOWriting')) {
                     $fhtml = str_replace($titles[0], '', $fhtml);
                 }
                 $fhtml = strip_tags($fhtml, "<h3><p><b>");
-                preg_match_all('#<h3 itemprop="name">(.*?)</h3>#s', $fhtml, $questions);
+                preg_match_all('#<h3>(.*?)</h3>#s', $fhtml, $questions);
                 $questions = isset($questions[1]) ? $questions[1] : [];
-                $answers = preg_split('#<h3 itemprop="name">(.*?)</h3>#s', $fhtml);
+                $answers = preg_split('#<h3>(.*?)</h3>#s', $fhtml);
                 if (is_array($answers)) {
                     array_shift($answers);
                     foreach ($answers as $idx => $answer) {
@@ -331,46 +349,50 @@ if (!class_exists('SEOWriting')) {
                 }
                 return [$questions, $answers, $title];
             }
+
             return false;
         }
 
-        public function postContentFilter( $content )
-        {
-            $shema_type = get_option('sw_shema_type');
-            $qa = $this->faqFilter($content);
-            if(is_single() && (empty($shema_type) || $shema_type === 'microdata') && $qa){
-                $questions = $qa[0];
-                $answers = $qa[1];
-                $title = $qa[2];
-                if(!empty($answers) && !empty($questions)){
-                    $out = '<section itemscope itemtype="https://schema.org/FAQPage">';
-                    $out .= '<h2>'.$title.'</h2>';
-                    for ($i=0; $i < count($questions); $i++) {
-                        if(isset($answers[$i]) && isset($questions[$i])){
-                            $out .= '<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">'
-                                        .'<h3 itemprop="name">'.$questions[$i].'</h3>'
-                                        .'<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">'
-                                            .'<div itemprop="text">'.$answers[$i].'</div>'
-                                        .'</div>'
-                                    .'</div>';
-                        }
-                    }
-                    $out .= '</section>';
+        public function restoreSchemaSection($content) {
+            if (!is_single() || !$this->isMicrodataSchema()) {
+                return $content;
+            }
+            $qa = $this->qaList($content);
+            if (!isset($qa[2]) || !isset($qa[0][0]) || !isset($qa[1][0])) {
+                return $content;
+            }
+            $questions = $qa[0];
+            $answers = $qa[1];
+            $title = $qa[2];
+            $count = count($questions);
 
-                    $content = preg_replace('#<section class="FAQPage">(.*?)</section>#s', $out, $content);
+            $out = '<section itemscope="" itemtype="https://schema.org/FAQPage">';
+            $out .= '<h2>'.$title.'</h2>';
+            for ($i=0; $i < $count; $i++) {
+                if(isset($answers[$i]) && isset($questions[$i])){
+                    $out .= '<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">'
+                        .'<h3 itemprop="name">'.$questions[$i].'</h3>'
+                        .'<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">'
+                        .'<div itemprop="text">'.$answers[$i].'</div>'
+                        .'</div>'
+                        .'</div>';
                 }
             }
+            $out .= '</section>';
+
+            $content = preg_replace('#<section class="schema-section">(.*?)</section>#s', $out, $content);
+
             return $content;
         }
 
-        private function loadImages(&$data, $post_id, $featured_image) {
+        private function downloadImages(&$data, $post_id, $featured_image) {
             $html = $data['html'];
+
             if (preg_match_all('/<img .*src="([^">]+)"[^>]*>/uU', $html, $matches)) {
                 $data['images'] = [];
                 include_once(ABSPATH.'wp-admin/includes/image.php');
                 include_once(ABSPATH.'wp-admin/includes/file.php');
                 include_once(ABSPATH.'wp-admin/includes/media.php');
-
                 $api = $this->getAPIClient();
                 $images = [];
                 foreach ($matches[1] as $i=>$path) {
@@ -453,6 +475,7 @@ if (!class_exists('SEOWriting')) {
                     return $result;
                 }
             }
+
             return [0];
         }
 
@@ -472,7 +495,8 @@ if (!class_exists('SEOWriting')) {
                     $post_time = $new_post_time;
                 }
             }
-            $content = wp_kses_post($this->renderContent($data['html']));
+            $content = wp_kses_post($this->clearSchemaSection($data['html']));
+            $data['html'] = $content;
             $new_post = [
                 'post_title' => sanitize_text_field($data['theme']),
                 'post_content' => $content,
@@ -511,7 +535,7 @@ if (!class_exists('SEOWriting')) {
                 }
             }
 
-            $this->loadImages($data, $post_id, isset($data['featured_image']));
+            $this->downloadImages($data, $post_id, isset($data['featured_image']));
 
             include_once(__DIR__.'/classes/post-meta.php');
             $pm = new \SEOWriting\PostMeta($post_id);
@@ -544,6 +568,7 @@ if (!class_exists('SEOWriting')) {
                     'parent' => (int) $category->parent
                 ];
             }
+
             return $array;
         }
 

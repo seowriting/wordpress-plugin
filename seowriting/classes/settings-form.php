@@ -153,7 +153,7 @@ class SettingsForm {
         $nonce = sanitize_text_field($_POST['nonce']);
         $action = sanitize_text_field($_POST['aj']);
         if (!isset($nonce) || !wp_verify_nonce( $nonce, 'ajax-nonce' ) || empty($action)) {
-            die ();
+            die();
         }
         $ret = [
             'success' => false
