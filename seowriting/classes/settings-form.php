@@ -100,12 +100,10 @@ class SettingsForm {
 
     public function form_action( $action = 'seowriting_admin_save', $type = false, $has_upload = false ) {
 
-        $has_upload = $has_upload ? 'enctype="multipart/form-data"' : '';
-
-        echo '<form method="post" action="'.esc_html(admin_url('admin-post.php')).'" class="seowriting-relative" ' . $has_upload . '>';
-        echo '<input type="hidden" name="action" value="'.$action.'">';
+        echo '<form method="post" action="'.esc_html(admin_url('admin-post.php')).'" class="seowriting-relative" ' . ($has_upload ? 'enctype="multipart/form-data"' : '') . '>';
+        echo '<input type="hidden" name="action" value="'.esc_html($action).'">';
         if ( $type ) {
-            echo '<input type="hidden" name="seowriting_type" value="' . $type . '" />';
+            echo '<input type="hidden" name="seowriting_type" value="' . esc_html($type) . '" />';
         }
         wp_nonce_field( $action, 'SWR_NONCE' );
     }
@@ -210,13 +208,13 @@ class SettingsForm {
     public function render_select($name, $options) {
         $selectedVal = get_option($name);
         $html = '';
-        $html .= '<select class="form-control" name="'. $name .'">';
+        $html .= '<select class="form-control" name="'. esc_html($name) .'">';
         foreach ($options as $key => $opt) {
             $selectedOpt = '';
             if (!empty($selectedVal) && $selectedVal === $key) {
                 $selectedOpt = 'selected="selected"';
             }
-            $html .= '<option value="' . $key . '" ' . $selectedOpt . '>' . $opt . '</option>';
+            $html .= '<option value="' . esc_html($key) . '" ' . $selectedOpt . '>' . esc_html($opt) . '</option>';
         }
         $html .= '</select>';
         return $html;
