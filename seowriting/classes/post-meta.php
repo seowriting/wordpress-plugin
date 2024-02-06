@@ -5,7 +5,7 @@ use DOMDocument;
 
 defined( 'WPINC' ) || exit;
 
-require_once(ABSPATH.'wp-admin/includes/plugin.php');
+require_once(ABSPATH . 'wp-admin/includes/plugin.php');
 include_once __DIR__ . '/../utils.php';
 
 class PostMeta {
@@ -56,7 +56,10 @@ class PostMeta {
         $description = isset($data['description']) ? $data['description'] : '';
         $main_keyword = isset($data['main_keyword']) ? $data['main_keyword'] : '';
 
-        if (is_plugin_active(self::PLUGIN_ELEMENTOR)) {
+        if (
+            is_plugin_active(self::PLUGIN_ELEMENTOR)
+            && get_option('seowriting_split_to_elementor') !== 'no'
+        ) {
             $this->setValue('_elementor_edit_mode', 'builder');
             $this->setValue('_elementor_template_type', 'wp-post');
             $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . self::PLUGIN_ELEMENTOR);

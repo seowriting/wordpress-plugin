@@ -70,3 +70,7 @@
 .seowriting-table select, .seowriting-table input{
 	width:100%
 }
+
+.mb-1 {
+    margin-bottom: 1em;
+}

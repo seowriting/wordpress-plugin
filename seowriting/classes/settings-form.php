@@ -126,7 +126,7 @@ class SettingsForm {
             exit;
         }
 
-        $keys = ['sw_shema_type'];
+        $keys = ['sw_shema_type', 'seowriting_split_to_elementor'];
         $fields_to_update = [];
         foreach ($keys as $key) {
             if (array_key_exists($key, $_POST)) {
