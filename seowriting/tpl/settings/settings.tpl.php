@@ -32,6 +32,19 @@ $this->form_action();
         <?php
     }
     ?>
+        <tr>
+            <th>Debug</th>
+            <td>
+                <div class="mb-1">Enable debugging mode:</div>
+                <?php echo $this->render_select('seowriting_debug', ['no'=>'No','yes'=>'Yes']); ?>
+                <div class="seowriting-desc"><?php
+                    echo sprintf(
+                        __('We may ask you to enable debugging mode if you contact us <a href="%s" target="_blank">here</a>.', 'seowriting.canny.io'),
+                        esc_url('https://seowriting.canny.io')
+                    );
+                    ?></div>
+            </td>
+        </tr>
 	</tbody>
 </table>
 <?php $this->form_end(); ?>

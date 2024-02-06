@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.4.8
+ * Version:           1.4.9
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -26,7 +26,7 @@ if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.4.8';
+        public $version = '1.4.9';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -82,10 +82,58 @@ if (!class_exists('SEOWriting')) {
                 'callback' => [$this, 'restWebhook'],
                 'permission_callback' => '__return_true'
             ]);
+            register_rest_route($this->getRestNamespace(), '/debug', [
+                'methods' => 'POST',
+                'callback' => [$this, 'restDebug'],
+                'permission_callback' => '__return_true'
+            ]);
         }
 
         public function getRestNamespace() {
             return 'seowriting/v'.self::REST_VERSION;
+        }
+
+        /**
+         * @param WP_REST_Request $request
+         * @return WP_REST_Response|WP_Error
+         */
+        public function restDebug($request) {
+            $res = [];
+            $post = $request->get_json_params();
+            $settings = $this->getSettings();
+            $client = $this->getAPIClient();
+            if (
+                get_option('seowriting_debug') === 'yes'
+                && isset($settings['secret'])
+                && isset($post['sign'])
+                && $client->checkSign($post, $settings['secret'])) {
+                include_once __DIR__ . '/../../../wp-admin/includes/plugin.php';
+                $plugins = [];
+                if (function_exists('get_plugins')) {
+                    foreach (get_plugins() as $pluginFile => $settings) {
+                        $plugins[] = [
+                            'name' => explode('/', $pluginFile)[0],
+                            'version' => $settings['Version'],
+                            'active' => is_plugin_active($pluginFile),
+                        ];
+                    }
+                }
+                $res = [
+                    'engine' => [
+                        'name' => 'wordpress',
+                        'version' => get_bloginfo('version'),
+                    ],
+                    'php' => [
+                        'version' => PHP_VERSION,
+                    ],
+                    'webServer' => [
+                        'name' => isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown',
+                    ],
+                    'plugins' => $plugins,
+                ];
+            }
+
+            return new WP_REST_Response($res, count($res) > 0 ? 200 : 400);
         }
 
         /**
