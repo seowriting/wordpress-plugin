@@ -65,7 +65,7 @@ class PostMeta {
             $dom = new DOMDocument();
             libxml_use_internal_errors(false);
             $hNames = ['h1' => true, 'h2' => true, 'h3' => true, 'h4' => true, 'h5' => true, 'h6' => true];
-            $dom->loadHTML('<div>' . $data['html'] . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            $dom->loadHTML('<?xml encoding="utf-8" ?><html><body><div>' . $data['html'] . '</div></body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
             $elementorSettings = [];
             $id = 1;
             $elements = is_null($dom->documentElement) ? null : $dom->documentElement->childNodes;
