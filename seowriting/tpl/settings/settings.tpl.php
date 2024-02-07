@@ -25,7 +25,7 @@ $this->form_action();
             <th>Elementor</th>
             <td>
                 <div class="mb-1">Split incoming post into blocks:</div>
-                <?php echo $this->render_select('seowriting_split_to_elementor', ['yes'=>'Yes','no'=>'No']); ?>
+                <?php echo $this->render_select('seowriting_split_to_elementor', ['no'=>'No', 'yes'=>'Yes']); ?>
                 <div class="seowriting-desc"><?php echo esc_html(__('If "No" is selected, Elementor will not be used when creating the post.', 'seowriting')); ?></div>
             </td>
         </tr>

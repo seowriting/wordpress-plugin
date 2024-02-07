@@ -58,7 +58,7 @@ class PostMeta {
 
         if (
             is_plugin_active(self::PLUGIN_ELEMENTOR)
-            && get_option('seowriting_split_to_elementor') !== 'no'
+            && get_option('seowriting_split_to_elementor') === 'yes'
         ) {
             $this->setValue('_elementor_edit_mode', 'builder');
             $this->setValue('_elementor_template_type', 'wp-post');
@@ -71,10 +71,11 @@ class PostMeta {
             $dom->loadHTML('<?xml encoding="utf-8" ?><html><body><div>' . $data['html'] . '</div></body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
             $elementorSettings = [];
             $id = 1;
-            $elements = is_null($dom->documentElement) ? null : $dom->documentElement->childNodes;
+            $elements = is_null($dom->documentElement)
+                ? null
+                : $dom->documentElement->childNodes[0]->childNodes[0]->childNodes;
             if (!is_null($elements)) {
                 foreach ($elements as $element) {
-                    // @phpstan-ignore-next-line
                     $tagName = $element->tagName;
                     if (is_null($tagName)) {
                         continue;
@@ -88,7 +89,6 @@ class PostMeta {
                             $tagSettings['header_size'] = $tagName;
                         }
                     } elseif ($tagName === 'img') {
-                        // @phpstan-ignore-next-line
                         $src = $element->getAttribute('src');
                         $tagWidgetType = 'image';
                         $tagSettings = [
@@ -96,7 +96,6 @@ class PostMeta {
                                 'url' => $this->elementorReplace($src),
                                 'id' => $data['images'][$src],
                                 'size' => '',
-                                // @phpstan-ignore-next-line
                                 'alt' => $element->getAttribute('alt'),
                                 'source' => 'library',
                             ]
