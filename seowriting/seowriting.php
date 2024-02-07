@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.4.11
+ * Version:           1.4.12
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -26,7 +26,7 @@ if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.4.11';
+        public $version = '1.4.12';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -309,12 +309,12 @@ if (!class_exists('SEOWriting')) {
          * @return string
          */
         private function clearSchemaSection($content){
-            if (preg_match('#<section itemscope="" itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $content, $matches)) {
+            if (preg_match('#<section itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $content, $matches)) {
                 $html = $matches[0];
-                $html = str_replace('itemscope="" itemprop="mainEntity" itemtype="https://schema.org/FAQPage"', 'class="schema-section"', $html);
+                $html = str_replace('itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage"', 'class="schema-section"', $html);
                 $items = array(' itemscope', ' itemprop="mainEntity"', ' itemprop="text"', ' itemprop="name"', ' itemprop="acceptedAnswer"', ' itemtype="https://schema.org/Question"', ' itemtype="https://schema.org/Answer"');
                 $html = str_replace($items, "", $html);
-                $content = preg_replace('#<section itemscope="" itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $html, $content);
+                $content = preg_replace('#<section itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $html, $content);
             }
 
             return $content;
@@ -414,7 +414,7 @@ if (!class_exists('SEOWriting')) {
             $title = $qa[2];
             $count = count($questions);
 
-            $out = '<section itemscope="" itemtype="https://schema.org/FAQPage">';
+            $out = '<section itemscope itemtype="https://schema.org/FAQPage">';
             $out .= '<h2>'.$title.'</h2>';
             for ($i=0; $i < $count; $i++) {
                 if(isset($answers[$i]) && isset($questions[$i])){
@@ -543,7 +543,11 @@ if (!class_exists('SEOWriting')) {
                     $post_time = $new_post_time;
                 }
             }
-            $content = wp_kses_post($this->clearSchemaSection($data['html']));
+            $content = wp_kses_post(
+                $this->clearSchemaSection(
+                    str_replace('itemscope="" itemprop=', 'itemscope itemprop=', $data['html'])
+                )
+            );
             $data['html'] = $content;
             $new_post = [
                 'post_title' => sanitize_text_field($data['theme']),
