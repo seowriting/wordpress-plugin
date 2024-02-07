@@ -1,6 +1,6 @@
 ## Warning
 
-The code in the main branch may not work. To use the plugin on your site, download the archive from the [release](https://github.com/SEOWritingAI/wordpress-plugin/releases) page.
+The code in the main branch may not work. To use the plugin on your site, download the archive from the [releases](https://github.com/SEOWritingAI/wordpress-plugin/releases) page.
 
 ## Prerequisites
 
