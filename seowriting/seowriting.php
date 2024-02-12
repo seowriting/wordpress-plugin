@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.4.13
+ * Version:           1.4.14
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -26,7 +26,7 @@ if (!class_exists('SEOWriting')) {
     class SEOWriting {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.4.13';
+        public $version = '1.4.14';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -607,8 +607,7 @@ if (!class_exists('SEOWriting')) {
          */
         public function getCategories() {
             $categories = get_categories([
-                'hide_empty' => 0,
-                'number' => 100,
+                'hide_empty' => 0
             ]);
 
             $array = [];
