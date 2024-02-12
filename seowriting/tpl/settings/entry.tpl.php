@@ -10,7 +10,7 @@ $menu_list = array(
 
 <div class="wrap">
 	<h1 class="seowriting-h1">
-		<?php echo esc_html(__( 'SEOWriting', 'seowriting' )) ; ?>
+		<?php echo esc_html__( 'SEOWriting', 'seowriting' ) ; ?>
 	</h1>
 	<span class="seowriting-desc">
 		v<?php echo esc_html($this->plugin->version); ?>

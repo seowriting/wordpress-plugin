@@ -7,7 +7,7 @@ $this->form_action();
 ?>
 <div class="seowriting_msg"><?php echo $this->showNotifications(); ?></div>
 <h3 class="seowriting-title-short">
-	<?php echo esc_html(__('Plugin Settings', 'seowriting')); ?>
+	<?php echo esc_html__('Plugin Settings', 'seowriting'); ?>
 </h3>
 <table class="wp-list-table striped seowriting-table">
 	<tbody>
@@ -15,7 +15,7 @@ $this->form_action();
 			<th>Structured data</th>
 			<td>
 				<?php echo $this->render_select('sw_shema_type', ['microdata'=>'Microdata','json'=>'JSON-LD']); ?>
-				<div class="seowriting-desc"><?php echo esc_html(__('It is important to note that this setting is exclusively designed for use with Schema markup for the FAQ section, ensuring more effective search engine interaction for your published content.', 'seowriting')); ?></div>
+				<div class="seowriting-desc"><?php echo esc_html__('It is important to note that this setting is exclusively designed for use with Schema markup for the FAQ section, ensuring more effective search engine interaction for your published content.', 'seowriting'); ?></div>
 			</td>
 		</tr>
     <?php
@@ -26,7 +26,7 @@ $this->form_action();
             <td>
                 <div class="mb-1">Split incoming post into blocks:</div>
                 <?php echo $this->render_select('seowriting_split_to_elementor', ['no'=>'No', 'yes'=>'Yes']); ?>
-                <div class="seowriting-desc"><?php echo esc_html(__('If "No" is selected, Elementor will not be used when creating the post.', 'seowriting')); ?></div>
+                <div class="seowriting-desc"><?php echo esc_html__('If "No" is selected, Elementor will not be used when creating the post.', 'seowriting'); ?></div>
             </td>
         </tr>
         <?php
@@ -38,10 +38,10 @@ $this->form_action();
                 <div class="mb-1">Enable debugging mode:</div>
                 <?php echo $this->render_select('seowriting_debug', ['no'=>'No','yes'=>'Yes']); ?>
                 <div class="seowriting-desc"><?php
-                    echo sprintf(
-                        __('We may ask you to enable debugging mode if you contact us <a href="%s" target="_blank">here</a>.', 'seowriting.canny.io'),
-                        esc_url('https://seowriting.canny.io')
-                    );
+                    echo esc_html__('We may ask you to enable debugging mode if you contact us', 'seowriting'),
+                        '<a href="'.esc_url('https://seowriting.canny.io').'" target="blank">',
+                        esc_html__('here', 'seowriting'),
+                        '</a>';
                     ?></div>
             </td>
         </tr>

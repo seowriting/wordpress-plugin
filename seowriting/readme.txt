@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.4
 Requires at least: 4.9
 Requires PHP: 5.6.20
-Stable tag: 1.4.14
+Stable tag: 1.4.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,6 +23,9 @@ Save time and enhance the quality of your content with SEOWriting.
 The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin). The Service is provided under the terms of [Terms of Service](https://seowriting.ai/terms-of-service?utm_source=wp_plugin) and [Privacy Policy](https://seowriting.ai/privacy-policy?utm_source=wp_plugin).
 
 == Changelog ==
+
+= 1.4.15 (2024/02/12) =
+Fix: Escaping the output of plugin settings according to the requirements of wordpress.org catalog moderators.
 
 = 1.4.14 (2024/02/12) =
 Fix: Removed the limit on the number of categories the plugin receives.
