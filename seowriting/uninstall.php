@@ -1,7 +1,7 @@
 <?php
 if (!defined('WP_UNINSTALL_PLUGIN')) {
-	exit;
+    exit;
 }
 
-include_once(__DIR__.'/seowriting.php');
+include_once(__DIR__ . '/seowriting.php');
 SEOWriting::i()->deactivate();

@@ -1,11 +1,13 @@
 <?php
+
 namespace SEOWriting;
 
-defined( 'WPINC' ) || exit;
+defined('WPINC') || exit;
 
 include_once __DIR__ . '/../utils.php';
 
-class APIClient {
+class APIClient
+{
     /**
      * @var \SEOWriting
      */
@@ -25,19 +27,21 @@ class APIClient {
     /**
      * @param \SEOWriting $plugin
      */
-    public function __construct($plugin) {
+    public function __construct($plugin)
+    {
         $this->plugin = $plugin;
         $this->site_url = substr($this->base_url, 0, (int)strpos($this->base_url, '/api/v1/'));
     }
 
-    private function getSign($data, $secret) {
+    private function getSign($data, $secret)
+    {
         $_data = $data;
         if (isset($_data['sign'])) {
             unset($_data['sign']);
         }
         ksort($_data);
 
-        foreach ($_data as $k=>$v) {
+        foreach ($_data as $k => $v) {
             if (is_array($v)) {
                 $_data[$k] = 'Array';
             }
@@ -46,14 +50,16 @@ class APIClient {
         return hash_hmac('sha256', implode('|', $_data), $secret);
     }
 
-    public function checkSign($data, $secret) {
+    public function checkSign($data, $secret)
+    {
         if (isset($data['sign'])) {
             return ($data['sign'] === $this->getSign($data, $secret));
         }
         return false;
     }
 
-    private function request($endpoint, $body = [], $headers = []) {
+    private function request($endpoint, $body = [], $headers = [])
+    {
         $headers = array_merge($headers, [
             'Content-Type' => 'application/json',
         ]);
@@ -66,10 +72,10 @@ class APIClient {
         ];
 
         if (!empty($body)) {
-            $args['body'] = json_encode_unescaped($body);
+            $args['body'] = seowriting_json_encode_unescaped($body);
         }
 
-        $url = $this->base_url.$endpoint;
+        $url = $this->base_url . $endpoint;
 
         return wp_remote_request($url, $args);
     }
@@ -78,8 +84,9 @@ class APIClient {
      * @param \WP_User $wpUser
      * @return array<string, int|string>
      */
-    public function connect($wpUser) {
-        $secret = md5(time().mt_rand());
+    public function connect($wpUser)
+    {
+        $secret = md5(time() . mt_rand());
 
         $_data = [
             'name' => $wpUser['user_email'],
@@ -119,14 +126,15 @@ class APIClient {
             return $data;
         }
 
-        $this->error = 'Error json_decode: '.$result;
+        $this->error = 'Error json_decode: ' . $result;
         return [
             'status' => 0,
             'error' => $this->error,
         ];
     }
 
-    public function disconnect() {
+    public function disconnect()
+    {
         $settings = $this->plugin->getSettings();
 
         $response = $this->request('disconnect', [
@@ -149,21 +157,23 @@ class APIClient {
             return $data;
         }
 
-        $this->error = 'Error json_decode: '.$result;
+        $this->error = 'Error json_decode: ' . $result;
         return [
             'status' => 0,
             'error' => $this->error,
         ];
     }
 
-    public function checkImageUrl($url) {
+    public function checkImageUrl($url)
+    {
         if (strpos($url, $this->site_url) === 0) {
             return preg_match('#^/docs/[0-9]+/[0-9a-z]+/[0-9]+/[0-9a-z]+\.(jpg|gif|png|webp)$#', substr($url, strlen($this->site_url)));
         }
         return false;
     }
 
-    public function loadImage($url, $filename='') {
+    public function loadImage($url, $filename = '')
+    {
         $settings = $this->plugin->getSettings();
 
         $args = [
@@ -179,8 +189,7 @@ class APIClient {
         if (is_wp_error($response)) {
             $this->error = $response->get_error_message();
             return false;
-        }
-        elseif (wp_remote_retrieve_response_code($response) === 200) {
+        } elseif (wp_remote_retrieve_response_code($response) === 200) {
             $content_type = wp_remote_retrieve_header($response, 'content-type');
             $size = wp_remote_retrieve_header($response, 'content-length');
             if (is_array($size)) {
@@ -208,13 +217,12 @@ class APIClient {
 
                                     if (preg_match('/^\s/us', mb_substr($filename, $max_length, 1, \SEOWriting::MB_ENCODING))) {
                                         $filename = trim($_name);
-                                    }
-                                    else {
+                                    } else {
                                         $filename = preg_replace('/^(.+)\s+\S+$/us', '\\1', $_name);
                                     }
                                 }
 
-                                $name = $filename.$ext;
+                                $name = $filename . $ext;
                             }
                         }
 
@@ -226,21 +234,20 @@ class APIClient {
                             'size' => $size
                         ];
                     }
-                }
-                else {
-                    $this->error = 'file_put_contents('.$tmp_name.') '.$size.' bytes';
+                } else {
+                    $this->error = 'file_put_contents(' . $tmp_name . ') ' . $size . ' bytes';
                 }
                 @unlink($tmp_name);
             }
-        }
-        else {
-            $this->error = 'response_code='.wp_remote_retrieve_response_code($response);
+        } else {
+            $this->error = 'response_code=' . wp_remote_retrieve_response_code($response);
         }
 
         return false;
     }
 
-    public function deleteImage($file) {
+    public function deleteImage($file)
+    {
         if (isset($file['tmp_name']) && file_exists($file['tmp_name'])) {
             @unlink($file['tmp_name']);
         }

@@ -1,14 +1,16 @@
 <?php
+
 namespace SEOWriting;
 
 use DOMDocument;
 
-defined( 'WPINC' ) || exit;
+defined('WPINC') || exit;
 
 require_once(ABSPATH . 'wp-admin/includes/plugin.php');
 include_once __DIR__ . '/../utils.php';
 
-class PostMeta {
+class PostMeta
+{
     private $post_id;
     private $meta_keys = null;
 
@@ -20,7 +22,8 @@ class PostMeta {
     const PLUGIN_SQUIRRLY_SEO = 'squirrly-seo/squirrly.php';
     const PLUGIN_YOAST = 'wordpress-seo/wp-seo.php';
 
-    public function __construct($post_id) {
+    public function __construct($post_id)
+    {
         $this->post_id = $post_id;
 
         if (function_exists('get_registered_meta_keys')) {
@@ -28,7 +31,8 @@ class PostMeta {
         }
     }
 
-    private function setValue($k, $v, $check_key=false) {
+    private function setValue($k, $v, $check_key = false)
+    {
         if (!$check_key || is_null($this->meta_keys) || in_array($k, $this->meta_keys)) {
             $v = wp_strip_all_tags($v, true);
             if (strlen($v) === 0) {
@@ -36,14 +40,14 @@ class PostMeta {
                 if (!empty($_old_value)) {
                     delete_post_meta($this->post_id, $k);
                 }
-            }
-            else {
+            } else {
                 update_post_meta($this->post_id, $k, $v);
             }
         }
     }
 
-    private function elementorReplace($s) {
+    private function elementorReplace($s)
+    {
         return str_replace(
             ['"', '/', PHP_EOL],
             ['\"', '\/', ''],
@@ -51,7 +55,8 @@ class PostMeta {
         );
     }
 
-    public function set($data) {
+    public function set($data)
+    {
         $title = isset($data['title']) ? $data['title'] : '';
         $description = isset($data['description']) ? $data['description'] : '';
         $main_keyword = isset($data['main_keyword']) ? $data['main_keyword'] : '';
@@ -131,7 +136,7 @@ class PostMeta {
                     $id++;
                 }
             }
-            update_post_meta($this->post_id, '_elementor_data', json_encode_unescaped($elementorSettings));
+            update_post_meta($this->post_id, '_elementor_data', seowriting_json_encode_unescaped($elementorSettings));
         }
 
         if (is_plugin_active(self::PLUGIN_YOAST)) {
@@ -148,7 +153,7 @@ class PostMeta {
             $this->setValue('_aioseo_og_description', $description);
 
             try {
-                $path = WP_PLUGIN_DIR.'/'.self::PLUGIN_ALL_IN_ONE;
+                $path = WP_PLUGIN_DIR . '/' . self::PLUGIN_ALL_IN_ONE;
                 include_once($path);
                 // @phpstan-ignore-next-line
                 \AIOSEO\Plugin\Common\Models\Post::savePost($this->post_id, [
@@ -189,7 +194,7 @@ class PostMeta {
         if (is_plugin_active(self::PLUGIN_SEO_FRAMEWORK)) {
             $this->setValue('_genesis_title', $title);
             $this->setValue('_genesis_description', $description);
-            $this->setValue('_open_graph_title', $title );
+            $this->setValue('_open_graph_title', $title);
             $this->setValue('_open_graph_description', $description);
             $this->setValue('_twitter_title', $title);
             $this->setValue('_twitter_description', $description);
