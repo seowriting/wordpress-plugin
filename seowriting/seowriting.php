@@ -175,8 +175,8 @@ if (!class_exists('SEOWriting')) {
                 if (function_exists('get_plugins')) {
                     foreach (get_plugins() as $pluginFile => $settings) {
                         $plugins[] = [
-                            'name' => esc_html(explode('/', $pluginFile)[0]),
-                            'version' => esc_html($settings['Version']),
+                            'name' => seowriting_escape(explode('/', $pluginFile)[0]),
+                            'version' => seowriting_escape($settings['Version']),
                             'active' => is_plugin_active($pluginFile),
                         ];
                     }
@@ -184,13 +184,13 @@ if (!class_exists('SEOWriting')) {
                 $res = [
                     'engine' => [
                         'name' => 'wordpress',
-                        'version' => get_bloginfo('version'),
+                        'version' => seowriting_escape(get_bloginfo('version')),
                     ],
                     'php' => [
-                        'version' => esc_html(PHP_VERSION),
+                        'version' => seowriting_escape(PHP_VERSION),
                     ],
                     'webServer' => [
-                        'name' => esc_html(isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown'),
+                        'name' => seowriting_escape(isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown'),
                     ],
                     'plugins' => $plugins,
                 ];
