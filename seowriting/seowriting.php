@@ -3,17 +3,17 @@
 /**
  * @link              https://seowriting.ai/
  * @since             1.1.8
- * @package           SEO-Writing
+ * @package           SEOWriting
  *
  * @wordpress-plugin
- * Plugin Name:       SEO-Writing
- * Description:       SEO-Writing - AI Writing Tool Plugin For Text Generation
- * Version:           1.5.0
+ * Plugin Name:       SEOWriting
+ * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
+ * Version:           1.5.1
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain:       seo-writing
+ * Text Domain:       seowriting
  * Domain Path:       /languages
  */
 
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.5.0';
+        public $version = '1.5.1';
         /**
          * @var \SEOWriting\APIClient|null
          */
