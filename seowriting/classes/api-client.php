@@ -12,7 +12,7 @@ class APIClient
      * @var \SEOWriting
      */
     private $plugin;
-    private $base_url = 'https://beta.seowriting.ai/api/v1/';
+    private $base_url = 'https://seowriting.ai/api/v1/';
     private $site_url;
     private $ssl_verify = false;
     private $http_timeout = 120;
