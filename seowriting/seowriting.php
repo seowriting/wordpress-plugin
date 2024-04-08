@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.5.2
+ * Version:           1.5.3
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.5.2';
+        public $version = '1.5.3';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -348,7 +348,8 @@ if (!class_exists('SEOWriting')) {
                         ]);
                         $rs = [
                             'result' => 1,
-                            'categories' => $this->getCategories()
+                            'categories' => $this->getCategories(),
+                            'authors' => $this->getAuthors(),
                         ];
                     } elseif ($action === 'disconnect') {
                         $this->deleteSettings();
@@ -359,6 +360,11 @@ if (!class_exists('SEOWriting')) {
                         $rs = [
                             'result' => 1,
                             'categories' => $this->getCategories()
+                        ];
+                    } elseif ($action === 'get_authors') {
+                        $rs = [
+                            'result' => 1,
+                            'authors' => $this->getAuthors()
                         ];
                     } else {
                         $rs = [
@@ -692,6 +698,26 @@ if (!class_exists('SEOWriting')) {
                 'post_id' => $post_id,
                 'url' => wp_get_shortlink($post_id),
             ];
+        }
+
+        /**
+         * @return array<array<string, int|string>>
+         */
+        public function getAuthors()
+        {
+            $users = get_users([
+                'role__in' => ['administrator', 'author', 'editor']
+            ]);
+
+            $result = [];
+            foreach ($users as $user) {
+                $result[] = [
+                    'id' => (int)$user->ID,
+                    'login' => $user->data->user_login,
+                ];
+            }
+
+            return $result;
         }
 
         /**

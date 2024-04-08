@@ -4,25 +4,27 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.4
 Requires at least: 4.9
 Requires PHP: 5.6.20
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI writing tool for 1-click SEO-optimized articles, blog posts & affiliate content. Available in 48 languages, auto-posted to WordPress with AI Images.
+AI writing assistant for creating SEO-optimized content with auto-publishing & scheduling posts on WordPress websites.
 
 == Description ==
 
-[SEOWriting](https://seowriting.ai/?utm_source=wp_plugin "SEOWriting")'s AI-powered writing assistant is designed to simplify the writing process, making it easier for users to create compelling content quickly and efficiently. Additionally, SEOWRITING provides one-click posting to WordPress, allowing users to publish their content directly from the platform.
+[SEOWriting](https://seowriting.ai/?utm_source=wp_plugin "SEOWriting")'s AI-powered writing assistant is designed to create SEO-optimized content with images and relevant videos from YouTube in 1-Click and Bulk modes. SEOWriting provides auto-posting to WordPress websites, allowing users to publish & schedule their content directly from the platform.
 
-With SEOWriting, users can easily generate high-quality articles, blog posts, marketing copy, SEO content, affiliate reviews, and much more.
+[youtube https://www.youtube.com/watch?v=Q10tXx2QE4E]
 
-SEOWriting's powerful plugin allows you to seamlessly publish your content directly to your WordPress website. The installation process is quick and easy, and you can find a step-by-step guide [here](https://docs.seowriting.ai/article/wordpress-integration?utm_source=wp_plugin "Plugin installation guide").
-
-Save time and enhance the quality of your content with SEOWriting.
+SEOWriting’s powerful plugin allows you to seamlessly publish titles, texts, images, meta titles, and meta descriptions on your WordPress website. The installation process is quick and easy, and you can find a step-by-step guide [here](https://docs.seowriting.ai/article/wordpress-integration?utm_source=wp_plugin "Plugin installation guide").
 
 The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin). The Service is provided under the terms of [Terms of Service](https://seowriting.ai/terms-of-service?utm_source=wp_plugin) and [Privacy Policy](https://seowriting.ai/privacy-policy?utm_source=wp_plugin).
 
 == Changelog ==
+
+= 1.5.3 (2024/04/08) =
+
+Feature: Internal changes to get a list of authors who are allowed to publish
 
 = 1.5.2 (2024/03/21) =
 
