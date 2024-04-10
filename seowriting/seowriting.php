@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.5.4
+ * Version:           1.5.5
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.5.4';
+        public $version = '1.5.5';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -349,7 +349,7 @@ if (!class_exists('SEOWriting')) {
                         $rs = [
                             'result' => 1,
                             'categories' => $this->getCategories(),
-                            'authors' => $this->getAuthors(),
+                            'authors' => $this->getAuthors(true),
                         ];
                     } elseif ($action === 'disconnect') {
                         $this->deleteSettings();
@@ -706,7 +706,7 @@ if (!class_exists('SEOWriting')) {
         /**
          * @return array<array<string, int|string>>
          */
-        public function getAuthors()
+        public function getAuthors($checkForDefault = false)
         {
             $users = get_users([
                 'role__in' => ['administrator', 'author', 'editor']
@@ -714,10 +714,15 @@ if (!class_exists('SEOWriting')) {
 
             $result = [];
             foreach ($users as $user) {
-                $result[] = [
+                $data = [
                     'id' => (int)$user->ID,
                     'login' => $user->data->user_login,
                 ];
+                if ($checkForDefault) {
+                    $currentUser = wp_get_current_user();
+                    $data['default'] = (int)$user->ID === (int)$currentUser->ID ? 1 : 0;
+                }
+                $result[] = $data;
             }
 
             return $result;
