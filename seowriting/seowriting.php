@@ -366,6 +366,11 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'authors' => $this->getAuthors()
                         ];
+                    } elseif ($action === 'get_posts') {
+                        $rs = [
+                            'result' => 1,
+                            'posts' => $this->getPosts()
+                        ];
                     } else {
                         $rs = [
                             'error' => 'Plugin does not support this feature'
@@ -704,6 +709,31 @@ if (!class_exists('SEOWriting')) {
         }
 
         /**
+         * @return array<array<int, string, string>>
+         */
+        public function getPosts() {
+            $posts = get_posts([
+                'numberposts' => 1000,
+                'post_type' => 'post',
+            ]);
+
+            $result = [];
+            foreach ($posts as $post) {
+                if ($post->post_status !== 'publish') {
+                    continue;
+                }
+                /** @var WP_Post $post */
+                $result[] = [
+                    'id' => (int)$post->ID,
+                    'content' => $post->post_content,
+                    'title' => $post->post_title,
+                ];
+            }
+
+            return $result;
+        }
+
+        /**
          * @return array<array<string, int|string>>
          */
         public function getAuthors()
@@ -737,17 +767,17 @@ if (!class_exists('SEOWriting')) {
                 'hide_empty' => 0
             ]);
 
-            $array = [];
+            $result = [];
             foreach ($categories as $category) {
                 /** @var WP_Term $category */
-                $array[] = [
+                $result[] = [
                     'id' => (int)$category->term_id,
                     'name' => $category->name,
                     'parent' => (int)$category->parent
                 ];
             }
 
-            return $array;
+            return $result;
         }
 
         /**
