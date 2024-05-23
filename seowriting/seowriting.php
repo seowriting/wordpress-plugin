@@ -40,6 +40,8 @@ if (!class_exists('SEOWriting')) {
         const MB_ENCODING = 'UTF-8';
 
         const SCHEMA_TYPE_JSON = 'json';
+        const SCHEMA_TYPE_MICRODATA = 'microdata';
+        const SCHEMA_TYPE_OFF = 'off';
 
         public function __construct()
         {
@@ -407,6 +409,14 @@ if (!class_exists('SEOWriting')) {
         /**
          * @return bool
          */
+        private function isDisabledSchema()
+        {
+            return get_option('sw_shema_type') === self::SCHEMA_TYPE_OFF;
+        }
+
+        /**
+         * @return bool
+         */
         private function isJSONSchema()
         {
             return get_option('sw_shema_type') === self::SCHEMA_TYPE_JSON;
@@ -417,7 +427,7 @@ if (!class_exists('SEOWriting')) {
          */
         private function isMicrodataSchema()
         {
-            return !$this->isJSONSchema();
+            return get_option('sw_shema_type') === self::SCHEMA_TYPE_MICRODATA;
         }
 
         public function printJSONLD()
@@ -491,7 +501,7 @@ if (!class_exists('SEOWriting')) {
 
         public function restoreSchemaSection($content)
         {
-            if (!is_single() || !$this->isMicrodataSchema()) {
+            if (!is_single() || $this->isJSONSchema()) {
                 return $content;
             }
             $qa = $this->qaList($content);
@@ -503,14 +513,15 @@ if (!class_exists('SEOWriting')) {
             $title = $qa[2];
             $count = count($questions);
 
-            $out = '<section itemscope itemtype="https://schema.org/FAQPage">';
+            $isDisabled = $this->isDisabledSchema();
+            $out = '<section'.($isDisabled ? '' : ' itemscope itemtype="https://schema.org/FAQPage"').'>';
             $out .= '<h2>' . $title . '</h2>';
             for ($i = 0; $i < $count; $i++) {
                 if (isset($answers[$i]) && isset($questions[$i])) {
-                    $out .= '<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">'
-                        . '<h3 itemprop="name">' . $questions[$i] . '</h3>'
-                        . '<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">'
-                        . '<div itemprop="text">' . $answers[$i] . '</div>'
+                    $out .= '<div'.($isDisabled ? '' : ' itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"').'>'
+                        . '<h3'.($isDisabled ? '' : ' itemprop="name"').'>' . $questions[$i] . '</h3>'
+                        . '<div'.($isDisabled ? '' : ' itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"').'>'
+                        . '<div'.($isDisabled ? '' : ' itemprop="text"').'>' . $answers[$i] . '</div>'
                         . '</div>'
                         . '</div>';
                 }

@@ -14,7 +14,7 @@ $this->form_action();
 		<tr>
 			<th>Structured data</th>
 			<td>
-				<?php echo $this->render_select('sw_shema_type', ['microdata'=>'Microdata','json'=>'JSON-LD']); ?>
+				<?php echo $this->render_select('sw_shema_type', ['microdata'=>'Microdata','json'=>'JSON-LD', 'off' => 'Off']); ?>
 				<div class="seowriting-desc"><?php echo esc_html__('It is important to note that this setting is exclusively designed for use with Schema markup for the FAQ section, ensuring more effective search engine interaction for your published content.', 'seowriting'); ?></div>
 			</td>
 		</tr>
