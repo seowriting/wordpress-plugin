@@ -74,7 +74,15 @@
             if ('success' in d) {
                 if (d.success) {
                     if ('auth_url' in d) {
-                        window.location.assign(d.auth_url);
+                        var a = document.createElement('a');
+                        a.href = d.auth_url;
+                        a.target = '_blank';
+                        a.dispatchEvent(new MouseEvent('click', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        }));
+                        //window.location.assign(d.auth_url);
                     }
                     else {
                         showMsg(d.msg);
@@ -82,7 +90,7 @@
                             $('.conection-message').html(d.body)
                         }
                     }
-                    if(type == 'disconnect'){
+                    if(type === 'disconnect'){
                         disableBtn(conection_button, false);
                         $('.conection-blok').removeClass('connected');
                         $(conection_button).html('Connect').attr('href','#connect');
