@@ -95,6 +95,45 @@ if (!class_exists('SEOWriting')) {
 
             add_filter('the_content', [$this, 'restoreSchemaSection'], 20);
             add_action("wp_head", [$this, 'printJSONLD'], 20);
+
+            add_action('transition_post_status', [$this, 'onChangePostStatus'], 10, 3);
+        }
+
+        /**
+         * @param $new_status string
+         * @param $old_status string
+         * @param $post WP_Post
+         * @return bool
+         */
+        public function onChangePostStatus($new_status, $old_status, $post) {
+            $status = '';
+            if (
+                ($old_status === 'auto-draft' && $new_status === 'publish')
+                || ($old_status === 'pending' && $new_status === 'publish')
+                || ($old_status === 'draft' && $new_status === 'publish')
+                || ($old_status === 'publish' && $new_status === 'publish')
+            ) {
+                $status = 'update';
+            } else if (
+                ($old_status === 'publish' && $new_status === 'pending')
+                || ($old_status === 'publish' && $new_status === 'draft')
+                || ($old_status === 'publish' && $new_status === 'trash')
+            ) {
+                $status = 'delete';
+            }
+            if ($status === '') {
+                return false;
+            }
+            $settings = $this->getSettings();
+            ob_start();
+            var_dump($post->ID);
+            $res = $this->getAPIClient()->changePostStatus($status, [
+                'post_id' => $post->ID,
+                'api_key' => $settings['api_key'],
+            ]);
+            var_dump($res);
+            file_put_contents(__DIR__ . '/hook.log', ob_get_clean() . PHP_EOL);
+
         }
 
         public function ksesAllowedHtml($allowed, $context)
@@ -370,6 +409,11 @@ if (!class_exists('SEOWriting')) {
                         $rs = [
                             'result' => 1,
                             'posts' => $this->getPosts()
+                        ];
+                    } elseif ($action === 'get_post') {
+                        $rs = [
+                            'result' => 1,
+                            'post' => $this->getPost(isset($post['post_id']) ? sanitize_text_field($post['post_id']) : '')
                         ];
                     } else {
                         $rs = [
@@ -708,14 +752,27 @@ if (!class_exists('SEOWriting')) {
             ];
         }
 
+        public function getPost($post_id) {
+            $post = get_post($post_id);
+            if (!$post || $post->post_status !== 'publish') {
+                return false;
+            }
+            return [
+                'id' => (int)$post->ID,
+                'content' => $post->post_content,
+                'title' => $post->post_title,
+                'url' => get_permalink($post->ID),
+            ];
+        }
+
         /**
          * @return array<array<int, string, string>>
          */
         public function getPosts() {
-            $posts = get_posts([
+            $posts = array_merge(get_posts([
                 'numberposts' => -1,
                 'post_type' => 'post',
-            ]);
+            ]), get_pages());
 
             $result = [];
             foreach ($posts as $post) {
@@ -727,6 +784,7 @@ if (!class_exists('SEOWriting')) {
                     'id' => (int)$post->ID,
                     'content' => $post->post_content,
                     'title' => $post->post_title,
+                    'url' => get_permalink($post->ID),
                 ];
             }
 

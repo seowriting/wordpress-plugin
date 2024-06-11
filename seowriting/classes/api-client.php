@@ -133,6 +133,15 @@ class APIClient
         ];
     }
 
+    /**
+     * @param $status string
+     * @param $data
+     */
+    public function changePostStatus($status, $data)
+    {
+        return $this->request('post_' . $status, $data);
+    }
+
     public function disconnect()
     {
         $settings = $this->plugin->getSettings();
