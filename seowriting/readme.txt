@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.5
 Requires at least: 4.9
 Requires PHP: 5.6.20
-Stable tag: 1.6.2
+Stable tag: 1.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,17 +22,11 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
-= 1.6.2 (2024/06/13) =
+= 1.7.0 (2024/05/) =
 
-Feature: Multiple keyword support in some plugins.
-
-= 1.6.1 (2024/05/23) =
-
-Feature: Internal changes.
-
-= 1.6.0 (2024/05/23) =
-
-Feature: Ability to disable schema.org markup.
+Feature:
+* Export posts to create knowledge base
+* Authorization on the [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin_changelog) website is performed in a new tab
 
 = 1.5.6 (2024/04/11) =
 
