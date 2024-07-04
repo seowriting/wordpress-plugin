@@ -137,6 +137,7 @@ if (!class_exists('SEOWriting')) {
                 'api_key' => $settings['api_key'],
             ]);
 
+            return true;
         }
 
         /**
@@ -784,7 +785,7 @@ if (!class_exists('SEOWriting')) {
         public function getPost($post_id)
         {
             $post = get_post($post_id);
-            if (!$post || $post->post_status !== 'publish') {
+            if (!$post || !($post instanceof WP_Post) || $post->post_status !== 'publish') {
                 return false;
             }
             return [
@@ -795,19 +796,17 @@ if (!class_exists('SEOWriting')) {
             ];
         }
 
-        /**
-         * @return array<array<int, string, string>>
-         */
         public function getPosts()
         {
+            $pages = get_pages();
             $posts = array_merge(get_posts([
                 'numberposts' => -1,
                 'post_type' => 'post',
-            ]), get_pages());
+            ]), $pages === false ? [] : $pages);
 
             $result = [];
             foreach ($posts as $post) {
-                if ($post->post_status !== 'publish') {
+                if (!($post instanceof WP_Post) || $post->post_status !== 'publish') {
                     continue;
                 }
                 /** @var WP_Post $post */
