@@ -40,6 +40,10 @@ if (!class_exists('SEOWriting')) {
         const MB_ENCODING = 'UTF-8';
 
         const SCHEMA_TYPE_JSON = 'json';
+        const SCHEMA_TYPE_MICRODATA = 'microdata';
+        const SCHEMA_TYPE_OFF = 'off';
+
+        const SEOWRITING_PHP = 'seowriting.php';
 
         public function __construct()
         {
@@ -80,7 +84,7 @@ if (!class_exists('SEOWriting')) {
 
             if (is_admin()) {
                 $this->adminPages();
-                add_filter('plugin_action_links_' . plugin_basename($this->plugin_path . 'seowriting.php'), [$this, 'adminSettingsLink']);
+                add_filter('plugin_action_links_' . plugin_basename($this->plugin_path . self::SEOWRITING_PHP), [$this, 'adminSettingsLink']);
 
                 register_deactivation_hook(__FILE__, [$this, 'deactivate']);
             }
@@ -97,6 +101,8 @@ if (!class_exists('SEOWriting')) {
             add_action("wp_head", [$this, 'printJSONLD'], 20);
 
             add_action('transition_post_status', [$this, 'onChangePostStatus'], 10, 3);
+            add_action('upgrader_process_complete', [$this, 'onUpdate'], 10, 2);
+
         }
 
         /**
@@ -105,7 +111,8 @@ if (!class_exists('SEOWriting')) {
          * @param $post WP_Post
          * @return bool
          */
-        public function onChangePostStatus($new_status, $old_status, $post) {
+        public function onChangePostStatus($new_status, $old_status, $post)
+        {
             $status = '';
             if (
                 ($old_status === 'auto-draft' && $new_status === 'publish')
@@ -125,15 +132,21 @@ if (!class_exists('SEOWriting')) {
                 return false;
             }
             $settings = $this->getSettings();
-            ob_start();
-            var_dump($post->ID);
-            $res = $this->getAPIClient()->changePostStatus($status, [
+            $this->getAPIClient()->changePostStatus($status, [
                 'post_id' => $post->ID,
                 'api_key' => $settings['api_key'],
             ]);
-            var_dump($res);
-            file_put_contents(__DIR__ . '/hook.log', ob_get_clean() . PHP_EOL);
 
+        }
+
+        /**
+         * @param $upgrader_object
+         * @param $options
+         * @return bool
+         */
+        public function onUpdate($upgrader_object, $options)
+        {
+            return $this->getAPIClient()->update($this->version);
         }
 
         public function ksesAllowedHtml($allowed, $context)
@@ -415,6 +428,11 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'post' => $this->getPost(isset($post['post_id']) ? sanitize_text_field($post['post_id']) : '')
                         ];
+                    } elseif ($action === 'get_version') {
+                        $rs = [
+                            'result' => 1,
+                            'version' => $this->getVersion()
+                        ];
                     } else {
                         $rs = [
                             'error' => 'Plugin does not support this feature'
@@ -425,6 +443,11 @@ if (!class_exists('SEOWriting')) {
                 }
             }
             return null;
+        }
+
+        private function isDisabledSchema()
+        {
+            return get_option('sw_shema_type') === self::SCHEMA_TYPE_OFF;
         }
 
         public function ajaxWebhook()
@@ -466,7 +489,7 @@ if (!class_exists('SEOWriting')) {
          */
         private function isMicrodataSchema()
         {
-            return !$this->isJSONSchema();
+            return get_option('sw_shema_type') === self::SCHEMA_TYPE_MICRODATA;
         }
 
         public function printJSONLD()
@@ -540,7 +563,7 @@ if (!class_exists('SEOWriting')) {
 
         public function restoreSchemaSection($content)
         {
-            if (!is_single() || !$this->isMicrodataSchema()) {
+            if (!is_single() || $this->isJSONSchema()) {
                 return $content;
             }
             $qa = $this->qaList($content);
@@ -552,14 +575,15 @@ if (!class_exists('SEOWriting')) {
             $title = $qa[2];
             $count = count($questions);
 
-            $out = '<section itemscope itemtype="https://schema.org/FAQPage">';
+            $isDisabled = !$this->isMicrodataSchema() && $this->isDisabledSchema();
+            $out = '<section' . ($isDisabled ? '' : ' itemscope itemtype="https://schema.org/FAQPage"') . '>';
             $out .= '<h2>' . $title . '</h2>';
             for ($i = 0; $i < $count; $i++) {
                 if (isset($answers[$i]) && isset($questions[$i])) {
-                    $out .= '<div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">'
-                        . '<h3 itemprop="name">' . $questions[$i] . '</h3>'
-                        . '<div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">'
-                        . '<div itemprop="text">' . $answers[$i] . '</div>'
+                    $out .= '<div' . ($isDisabled ? '' : ' itemscope itemprop="mainEntity" itemtype="https://schema.org/Question"') . '>'
+                        . '<h3' . ($isDisabled ? '' : ' itemprop="name"') . '>' . $questions[$i] . '</h3>'
+                        . '<div' . ($isDisabled ? '' : ' itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"') . '>'
+                        . '<div' . ($isDisabled ? '' : ' itemprop="text"') . '>' . $answers[$i] . '</div>'
                         . '</div>'
                         . '</div>';
                 }
@@ -752,7 +776,13 @@ if (!class_exists('SEOWriting')) {
             ];
         }
 
-        public function getPost($post_id) {
+        public function getVersion()
+        {
+            return $this->version;
+        }
+
+        public function getPost($post_id)
+        {
             $post = get_post($post_id);
             if (!$post || $post->post_status !== 'publish') {
                 return false;
@@ -768,7 +798,8 @@ if (!class_exists('SEOWriting')) {
         /**
          * @return array<array<int, string, string>>
          */
-        public function getPosts() {
+        public function getPosts()
+        {
             $posts = array_merge(get_posts([
                 'numberposts' => -1,
                 'post_type' => 'post',

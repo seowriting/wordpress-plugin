@@ -22,11 +22,23 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
-= 1.7.0 (2024/05/) =
+= 1.7.0 (2024/07/04) =
 
 Feature:
-* Export posts to create knowledge base
-* Authorization on the [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin_changelog) website is performed in a new tab
+* Export posts to create knowledge base.
+* Authorization on the [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin_changelog) website is performed in a new tab.
+
+= 1.6.2 (2024/06/13) =
+
+Feature: Multiple keyword support in some plugins.
+
+= 1.6.1 (2024/05/23) =
+
+Feature: Internal changes.
+
+= 1.6.0 (2024/05/23) =
+
+Feature: Ability to disable schema.org markup.
 
 = 1.5.6 (2024/04/11) =
 
