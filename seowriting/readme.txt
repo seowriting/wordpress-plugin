@@ -1,7 +1,7 @@
 === SEOWriting ===
 Contributors: SEOWriting
 Tags: seo writing, AI tool, AI writing, generation text
-Tested up to: 6.5
+Tested up to: 6.5.5
 Requires at least: 4.9
 Requires PHP: 5.6.20
 Stable tag: 1.7.1
