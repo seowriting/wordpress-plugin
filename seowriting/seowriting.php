@@ -424,7 +424,7 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'posts' => $this->getPosts(
                                 intval(isset($post['page']) ? sanitize_text_field($post['page']) : '1'),
-                                intval(isset($post['per_page']) ? sanitize_text_field($post['per_page']) : '50'),
+                                intval(isset($post['per_page']) ? sanitize_text_field($post['per_page']) : '50')
                             )
                         ];
                     } elseif ($action === 'get_post') {
@@ -809,7 +809,7 @@ if (!class_exists('SEOWriting')) {
                 'posts_per_page' => $per_page,
                 'paged' => $page,
                 'order' => 'DESC',
-                'orderby' => 'ID',
+                'orderby' => 'ID'
             ]);
             if ($query->have_posts()) {
                 while ($query->have_posts()) {
@@ -818,7 +818,7 @@ if (!class_exists('SEOWriting')) {
                         'id' => intval(get_the_ID()),
                         'content' => get_the_content(),
                         'title' => get_the_title(),
-                        'url' => get_permalink(),
+                        'url' => get_permalink()
                     ];
                 }
             }
