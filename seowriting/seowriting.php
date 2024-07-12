@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.7.0
+ * Version:           1.7.1
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.7.0';
+        public $version = '1.7.1';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -422,7 +422,10 @@ if (!class_exists('SEOWriting')) {
                     } elseif ($action === 'get_posts') {
                         $rs = [
                             'result' => 1,
-                            'posts' => $this->getPosts()
+                            'posts' => $this->getPosts(
+                                intval(isset($post['page']) ? sanitize_text_field($post['page']) : '1'),
+                                intval(isset($post['per_page']) ? sanitize_text_field($post['per_page']) : '50'),
+                            )
                         ];
                     } elseif ($action === 'get_post') {
                         $rs = [
@@ -796,27 +799,30 @@ if (!class_exists('SEOWriting')) {
             ];
         }
 
-        public function getPosts()
+        public function getPosts($page = 1, $per_page = 50)
         {
-            $pages = get_pages();
-            $posts = array_merge(get_posts([
-                'numberposts' => -1,
-                'post_type' => 'post',
-            ]), $pages === false ? [] : $pages);
-
             $result = [];
-            foreach ($posts as $post) {
-                if (!($post instanceof WP_Post) || $post->post_status !== 'publish') {
-                    continue;
+
+            $query = new WP_Query([
+                'post_type' => ['page', 'post'],
+                'post_status' => 'publish',
+                'posts_per_page' => $per_page,
+                'paged' => $page,
+                'order' => 'DESC',
+                'orderby' => 'ID',
+            ]);
+            if ($query->have_posts()) {
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    $result[] = [
+                        'id' => intval(get_the_ID()),
+                        'content' => get_the_content(),
+                        'title' => get_the_title(),
+                        'url' => get_permalink(),
+                    ];
                 }
-                /** @var WP_Post $post */
-                $result[] = [
-                    'id' => (int)$post->ID,
-                    'content' => $post->post_content,
-                    'title' => $post->post_title,
-                    'url' => get_permalink($post->ID),
-                ];
             }
+            wp_reset_postdata();
 
             return $result;
         }
