@@ -49,8 +49,9 @@ $this->form_action();
         <tr>
             <th>Rename</th>
             <td>
-                <div class="mb-1">If necessary, you can rename the plugin:</div>
+                <div class="mb-1">Rename Plugin Folder for Anonymity:</div>
                 <?php echo $this->render_input_text('seowriting_plugin_name'); ?>
+                <div class="mt-1 seowriting-desc">If necessary, you can rename the plugin folder to prevent SEOs and spiders from identifying it on your website.</div>
             </td>
         </tr>
         </tbody>
