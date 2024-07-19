@@ -80,6 +80,17 @@ class APIClient
         return wp_remote_request($url, $args);
     }
 
+    public function rename($data)
+    {
+        $settings = $this->plugin->getSettings();
+        $data['api_key'] = $settings['api_key'];
+        if (function_exists('rest_url')) {
+            $data['rest'] = rest_url($this->plugin->getRestNamespace());
+        }
+        $this->request('rename', $data);
+        return true;
+    }
+
     /**
      * @param string $newVersion
      * @return bool

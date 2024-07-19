@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.7.1
+ * Version:           1.8.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.7.1';
+        public $version = '1.8.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -35,7 +35,10 @@ if (!class_exists('SEOWriting')) {
         private $settings = null;
         private $log_file = __DIR__ . '/log.php';
 
+        const SETTINGS_DEBUG_KEY = 'seowriting_debug';
         const SETTINGS_KEY = 'seowriting_settings';
+        const SETTINGS_PLUGIN_NAME_KEY = 'seowriting_plugin_name';
+        const SETTINGS_PLUGIN_VERSION = 'seowriting_plugin_version';
         const REST_VERSION = 1;
         const MB_ENCODING = 'UTF-8';
 
@@ -55,14 +58,9 @@ if (!class_exists('SEOWriting')) {
                     'code' => $e->getCode(),
                     'backtrace' => []
                 ];
-                if (isset($_SERVER['REQUEST_URI'])) {
-                    $replace = explode('wp-json', $_SERVER['REQUEST_URI'])[0];
-                } else {
-                    $replace = '';
-                }
                 foreach ($e->getTrace() as $item) {
                     if (isset($item['file'])) {
-                        $file = $replace === '' ? $item['file'] : explode($replace, $item['file'])[1];
+                        $file = $item['file'];
                     } else {
                         $file = 'unknown';
                     }
@@ -87,6 +85,7 @@ if (!class_exists('SEOWriting')) {
                 add_filter('plugin_action_links_' . plugin_basename($this->plugin_path . self::SEOWRITING_PHP), [$this, 'adminSettingsLink']);
 
                 register_deactivation_hook(__FILE__, [$this, 'deactivate']);
+                register_activation_hook(__FILE__, [$this, 'activate']);
             }
 
             if (wp_doing_ajax()) {
@@ -103,6 +102,61 @@ if (!class_exists('SEOWriting')) {
             add_action('transition_post_status', [$this, 'onChangePostStatus'], 10, 3);
             add_action('upgrader_process_complete', [$this, 'onUpdate'], 10, 2);
 
+            add_action('requests-requests.before_parse', [$this, 'onAfterRequest'], 10, 6);
+            add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
+        }
+
+        public function onPluginsLoaded()
+        {
+            $prevVersion = (string)get_option(self::SETTINGS_PLUGIN_VERSION);
+            $pluginName = (string)get_option(self::SETTINGS_PLUGIN_NAME_KEY);
+            if (strlen($pluginName) > 0 && $pluginName !== basename(__DIR__)) {
+                include_once __DIR__ . '/classes/settings-form.php';
+                $form = new \SEOWriting\SettingsForm($this);
+                $form->rename_plugin($pluginName);
+            }
+        }
+
+        public function activate()
+        {
+            update_option(self::SETTINGS_PLUGIN_VERSION, $this->version);
+        }
+
+        public function onAfterRequest(&$response, $url, $headers, $data, $type, $options)
+        {
+            if (strpos($url, 'seowriting') === false && strpos($url, '.zip') === false) {
+                return;
+            }
+            if (!is_array($options) || !isset($options['filename']) || !is_readable($options['filename'])) {
+                return;
+            }
+            if (!class_exists('ZipArchive')) {
+                return;
+            }
+            $pluginName = (string)get_option(self::SETTINGS_PLUGIN_NAME_KEY);
+            if (strlen($pluginName) === 0) {
+                return;
+            }
+
+            $filename = $options['filename'];
+            $tmpDir = sys_get_temp_dir() . '/' . uniqid('seowriting_');
+            mkdir($tmpDir);
+            $newDir = $tmpDir . '/' . $pluginName;
+            $zip = new ZipArchive();
+            if ($zip->open($filename)) {
+                $zip->extractTo($tmpDir);
+                $zip->close();
+                rename($tmpDir . '/seowriting/', $newDir);
+                $resultFile = $tmpDir . '/' . basename($filename);
+                $result = new ZipArchive();
+                if ($result->open($resultFile, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+                    $result->addEmptyDir($pluginName);
+                    seowriting_add_file_to_zip($newDir, $result, $pluginName);
+                    $result->close();
+                    copy($resultFile, $filename);
+                    seowriting_delete_dir($tmpDir);
+                }
+            }
         }
 
         /**
@@ -342,7 +396,10 @@ if (!class_exists('SEOWriting')) {
         public function deleteSettings()
         {
             $this->settings = [];
+
             delete_option(self::SETTINGS_KEY);
+            delete_option(self::SETTINGS_DEBUG_KEY);
+            delete_option(self::SETTINGS_PLUGIN_NAME_KEY);
         }
 
         /**
@@ -374,6 +431,11 @@ if (!class_exists('SEOWriting')) {
                 }
             }
             return [];
+        }
+
+        public function rename($data)
+        {
+            return $this->getAPIClient()->rename($data);
         }
 
         /**
@@ -877,7 +939,7 @@ if (!class_exists('SEOWriting')) {
         /**
          * @return \SEOWriting\APIClient
          */
-        private function getAPIClient()
+        public function getAPIClient()
         {
             if (is_null($this->api_client)) {
                 require_once($this->plugin_path . 'classes/api-client.php');

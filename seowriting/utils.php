@@ -1,5 +1,42 @@
 <?php
 
+function seowriting_add_file_to_zip($dir, $zip, $rootPath = '')
+{
+    $files = scandir($dir);
+    foreach ($files as $file) {
+        if ($file == '.' || $file == '..') {
+            continue;
+        }
+        $filePath = $dir . '/' . $file;
+        $zipPath = $rootPath ? $rootPath . '/' . $file : $file;
+        if (is_dir($filePath)) {
+            $zip->addEmptyDir($zipPath);
+            seowriting_add_file_to_zip($filePath, $zip, $zipPath);
+        } else {
+            $zip->addFile($filePath, $zipPath);
+        }
+    }
+}
+
+function seowriting_delete_dir($dirPath)
+{
+    if (!is_dir($dirPath)) {
+        throw new InvalidArgumentException("$dirPath must be a directory");
+    }
+    if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
+        $dirPath .= '/';
+    }
+    $files = glob($dirPath . '*', GLOB_MARK);
+    foreach ($files as $file) {
+        if (is_dir($file)) {
+            seowriting_delete_dir($file);
+        } else {
+            unlink($file);
+        }
+    }
+    rmdir($dirPath);
+}
+
 /**
  * @param $payload
  * @return string
