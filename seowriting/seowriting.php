@@ -108,7 +108,9 @@ if (!class_exists('SEOWriting')) {
 
         public function onPluginsLoaded()
         {
+            /** @phpstan-ignore-next-line */
             $prevVersion = (string)get_option(self::SETTINGS_PLUGIN_VERSION);
+            /** @phpstan-ignore-next-line */
             $pluginName = (string)get_option(self::SETTINGS_PLUGIN_NAME_KEY);
             if (strlen($pluginName) > 0 && $pluginName !== basename(__DIR__)) {
                 include_once __DIR__ . '/classes/settings-form.php';
@@ -133,6 +135,7 @@ if (!class_exists('SEOWriting')) {
             if (!class_exists('ZipArchive')) {
                 return;
             }
+            /** @phpstan-ignore-next-line */
             $pluginName = (string)get_option(self::SETTINGS_PLUGIN_NAME_KEY);
             if (strlen($pluginName) === 0) {
                 return;

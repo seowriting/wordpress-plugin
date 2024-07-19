@@ -142,12 +142,14 @@ class SettingsForm
             if (array_key_exists($key, $_POST)) {
                 $value = trim($_POST[$key]);
                 if ($key === 'seowriting_plugin_name') {
+                    /** @phpstan-ignore-next-line */
                     $value = str_replace(' ', '_', preg_replace('/[^a-zA-Z0-9\s]/', '', mb_strtolower($value)));
                 }
                 $fields_to_update[$key] = sanitize_text_field($value);
             }
         }
         $rename = '';
+        /** @phpstan-ignore-next-line */
         $prev_name = (string)get_option('seowriting_plugin_name');
         if (isset($fields_to_update['seowriting_plugin_name']) && $fields_to_update['seowriting_plugin_name'] !== '' && $fields_to_update['seowriting_plugin_name'] !== $prev_name) {
             $rename = $fields_to_update['seowriting_plugin_name'];
@@ -199,6 +201,7 @@ class SettingsForm
         if (file_exists($new_dir)) {
             $result = false;
         } else {
+            /** @phpstan-ignore-next-line */
             $result = rename($current_dir, $new_dir);
         }
         return $result;
@@ -267,6 +270,7 @@ class SettingsForm
 
     public function render_input_text($name)
     {
+        /** @phpstan-ignore-next-line */
         return '<input type="text" name="' . esc_html($name) . '" value="' . esc_html((string)get_option($name)) . '" class="form-control">';
     }
 

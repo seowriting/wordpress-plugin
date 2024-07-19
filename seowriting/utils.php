@@ -3,6 +3,9 @@
 function seowriting_add_file_to_zip($dir, $zip, $rootPath = '')
 {
     $files = scandir($dir);
+    if (!is_array($files)) {
+        return;
+    }
     foreach ($files as $file) {
         if ($file == '.' || $file == '..') {
             continue;
@@ -27,11 +30,13 @@ function seowriting_delete_dir($dirPath)
         $dirPath .= '/';
     }
     $files = glob($dirPath . '*', GLOB_MARK);
-    foreach ($files as $file) {
-        if (is_dir($file)) {
-            seowriting_delete_dir($file);
-        } else {
-            unlink($file);
+    if (is_array($files)) {
+        foreach ($files as $file) {
+            if (is_dir($file)) {
+                seowriting_delete_dir($file);
+            } else {
+                unlink($file);
+            }
         }
     }
     rmdir($dirPath);
