@@ -22,6 +22,11 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
+= 1.8.2 (2024/07/28) =
+
+Fix:
+* Loading third-party plugins if the plugin has been renamed.
+
 = 1.8.1 (2024/07/19) =
 
 Feature:
