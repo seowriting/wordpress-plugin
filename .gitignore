@@ -1,5 +1,4 @@
 .idea/
 *.zip
 tmp/
-release.sh
 flush.sh
