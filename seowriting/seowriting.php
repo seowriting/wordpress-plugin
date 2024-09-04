@@ -500,7 +500,7 @@ if (!class_exists('SEOWriting')) {
                     }  elseif ($action === 'get_post_slug') {
                         $rs = [
                             'result' => 1,
-                            'slug' => get_permalink(sanitize_text_field($post['post_id']))
+                            'slug' => get_permalink(intval($post['post_id']))
                         ];
                     } elseif ($action === 'get_version') {
                         $rs = [
