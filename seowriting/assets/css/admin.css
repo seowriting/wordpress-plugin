@@ -67,8 +67,10 @@
     line-height: 1.3;
     vertical-align: middle;
 }
-.seowriting-table select, .seowriting-table input{
-	width:100%
+.seowriting-table select,
+.seowriting-table input {
+    max-width: 25rem;
+	width:100%;
 }
 
 .mb-1 {
