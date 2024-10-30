@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.8.7
+ * Version:           1.9.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.8.7';
+        public $version = '1.9.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -36,6 +36,8 @@ if (!class_exists('SEOWriting')) {
         private $log_file = __DIR__ . '/log.php';
 
         const SETTINGS_DEBUG_KEY = 'seowriting_debug';
+        const SETTINGS_GENERATOR_NAME = 'seowriting';
+        const SETTINGS_GENERATOR_NAME_KEY = 'seowriting_generator';
         const SETTINGS_KEY = 'seowriting_settings';
         const SETTINGS_PLUGIN_NAME_KEY = 'seowriting_plugin_name';
         const SETTINGS_PLUGIN_VERSION = 'seowriting_plugin_version';
@@ -104,6 +106,7 @@ if (!class_exists('SEOWriting')) {
 
             add_action('requests-requests.before_parse', [$this, 'onAfterRequest'], 10, 6);
             add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
+
         }
 
         public function onPluginsLoaded()
@@ -468,6 +471,7 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'categories' => $this->getCategories(),
                             'authors' => $this->getAuthors(),
+                            'types' => $this->getPostTypes(),
                         ];
                     } elseif ($action === 'disconnect') {
                         $this->deleteSettings();
@@ -514,6 +518,11 @@ if (!class_exists('SEOWriting')) {
                             'categories' => $this->getCategories(),
                             'types' => $this->getPostTypes(),
                             'version' => $this->getVersion()
+                        ];
+                    }  elseif ($action === 'search_pages') {
+                        $rs = [
+                            'result' => 1,
+                            'pages' => $this->searchPages(sanitize_text_field($post['q']), isset($post['limit']) ? intval($post['limit']) : 10)
                         ];
                     } else {
                         $rs = [
@@ -778,6 +787,8 @@ if (!class_exists('SEOWriting')) {
 
         private function publishPost($user_id, $data)
         {
+            global $current_user;
+
             $maxExecutionTime = (int)ini_get('max_execution_time');
             @set_time_limit(120);
 
@@ -802,23 +813,57 @@ if (!class_exists('SEOWriting')) {
             if (isset($data['author_id'])) {
                 $user_id = (int)$data['author_id'];
             }
+            $current_user = new WP_User($user_id);
+            $post_type = isset($data['post_type']) ? $data['post_type'] : 'post';
             $new_post = [
                 'post_title' => sanitize_text_field($data['theme']),
                 'post_content' => $content,
                 'post_status' => $post_status,
                 'post_date' => date('Y-m-d H:i:s', $post_time),
                 'post_author' => $user_id,
-                'post_type' => 'post',
-                'post_category' => $this->getPostCategory(isset($data['category']) ? sanitize_text_field($data['category']) : ''),
+                'post_type' => $post_type,
                 'post_excerpt' => isset($data['excerpt']) && (int)$data['excerpt'] === 1
                     ? (isset($data['description']) ? sanitize_text_field($data['description']) : '')
                     : '',
             ];
 
+            $taxonomies = get_object_taxonomies($post_type);
+            if (in_array('category', $taxonomies)) {
+                $new_post['post_category'] = $this->getPostCategory(isset($data['category']) ? sanitize_text_field($data['category']) : '');
+            } else {
+                $ids = array_map('intval', explode(',', sanitize_text_field($data['category'])));
+                foreach ($ids as $id) {
+                    $term = get_term($id);
+                    if (!is_wp_error($term) && $term) {
+                        $taxonomy_name = get_taxonomy($term->taxonomy)->labels->singular_name;
+                        if (!isset($new_post['tax_input'])) {
+                            $new_post['tax_input'] = [];
+                        }
+                        if (!isset($new_post['tax_input'][$taxonomy_name])) {
+                            $new_post['tax_input'][$taxonomy_name] = [];
+                        }
+                        $new_post['tax_input'][$taxonomy_name][] = $term->name;
+                    }
+                }
+            }
+
             if (isset($data['post_slug'])) {
                 $slug = sanitize_title($data['post_slug']);
                 if (strlen($slug) > 0) {
                     $new_post['post_name'] = $slug;
+                }
+            }
+
+            if (isset($data['post_type']) && $data['post_type'] === 'page' && isset($data['parent_id'])) {
+                global $wpdb;
+                $new_post['post_parent'] = $data['parent_id'];
+                if (isset($data['sort_order'])) {
+                    $new_post['menu_order'] = $data['sort_order'];
+                } else {
+                    $sort_order = $wpdb->get_var($wpdb->prepare("select max(menu_order)+1 from $wpdb->posts where post_parent = %s", $data['parent_id']));
+                    if ($sort_order) {
+                        $new_post['menu_order'] = $sort_order;
+                    }
                 }
             }
 
@@ -851,6 +896,8 @@ if (!class_exists('SEOWriting')) {
 
             @set_time_limit($maxExecutionTime);
 
+            add_post_meta($post_id, self::SETTINGS_GENERATOR_NAME_KEY, self::SETTINGS_GENERATOR_NAME, true);
+
             return [
                 'result' => 1,
                 'post_id' => $post_id,
@@ -858,6 +905,52 @@ if (!class_exists('SEOWriting')) {
                 'slug' => get_permalink($post_id)
             ];
         }
+
+        public function onSearchPages($where, $wp_query)
+        {
+            global $wpdb;
+            if ($search_term = $wp_query->get('post_title_like')) {
+                $where .= ' AND ' . $wpdb->posts . '.post_title LIKE \'%' . esc_sql($wpdb->esc_like($search_term)) . '%\'';
+            }
+
+            return $where;
+        }
+
+        /**
+         * @param string $query
+         * @param int $limit
+         * @return array
+         */
+        public function searchPages($query, $limit = 10)
+        {
+            if ($limit < 10) {
+                $limit = 10;
+            }
+
+            add_filter('posts_where', [$this, 'onSearchPages'], 10, 2);
+            $pages = new WP_Query([
+                'post_type' => 'page',
+                'post_title_like' => $query,
+                'posts_per_page' => $limit,
+                'post_status' => 'publish',
+            ]);
+            remove_filter('posts_where', [$this, 'onSearchPages']);
+
+            $res = [];
+            if ($pages->have_posts()) {
+                while ($pages->have_posts()) {
+                    $pages->the_post();
+                    $res[] = [
+                        'id' => get_the_ID(),
+                        'title' => get_the_title(),
+                    ];
+                }
+                wp_reset_postdata();
+            }
+
+            return $res;
+        }
+
 
         public function getVersion()
         {

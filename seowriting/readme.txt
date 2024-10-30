@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 6.6.2
 Requires at least: 4.9
 Requires PHP: 5.6.20
-Stable tag: 1.8.7
+Stable tag: 1.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,20 +22,10 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
-= 1.8.7 (2024/10/08) =
+= 1.9.0 (2024/10/30) =
 
 Feature:
-* Internal changes
-
-= 1.8.6 (2024/10/03) =
-
-Feature:
-* Small UI update
-
-= 1.8.5 (2024/10/01) =
-
-Feature:
-* Internal changes
+* Publishing text with page type selection
 
 = 1.8.4 (2024/09/04) =
 
