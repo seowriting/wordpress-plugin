@@ -835,6 +835,7 @@ if (!class_exists('SEOWriting')) {
                 foreach ($ids as $id) {
                     $term = get_term($id);
                     if (!is_wp_error($term) && $term) {
+                        /** @phpstan-ignore-next-line */
                         $taxonomy_name = get_taxonomy($term->taxonomy)->labels->singular_name;
                         if (!isset($new_post['tax_input'])) {
                             $new_post['tax_input'] = [];
@@ -842,6 +843,7 @@ if (!class_exists('SEOWriting')) {
                         if (!isset($new_post['tax_input'][$taxonomy_name])) {
                             $new_post['tax_input'][$taxonomy_name] = [];
                         }
+                        /** @phpstan-ignore-next-line */
                         $new_post['tax_input'][$taxonomy_name][] = $term->name;
                     }
                 }
@@ -910,6 +912,7 @@ if (!class_exists('SEOWriting')) {
         {
             global $wpdb;
             if ($search_term = $wp_query->get('post_title_like')) {
+                /** @phpstan-ignore-next-line */
                 $where .= ' AND ' . $wpdb->posts . '.post_title LIKE \'%' . esc_sql($wpdb->esc_like($search_term)) . '%\'';
             }
 
@@ -919,7 +922,6 @@ if (!class_exists('SEOWriting')) {
         /**
          * @param string $query
          * @param int $limit
-         * @return array
          */
         public function searchPages($query, $limit = 10)
         {
