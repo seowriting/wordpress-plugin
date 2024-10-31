@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.9.0
+ * Version:           1.9.1
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.9.0';
+        public $version = '1.9.1';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -481,7 +481,7 @@ if (!class_exists('SEOWriting')) {
                     } elseif ($action === 'get_categories') {
                         $rs = [
                             'result' => 1,
-                            'categories' => $this->getCategories()
+                            'categories' => $this->getCategories(isset($post['page_type']) ? $post['page_type'] : 'post')
                         ];
                     } elseif ($action === 'get_authors') {
                         $rs = [
@@ -515,7 +515,7 @@ if (!class_exists('SEOWriting')) {
                         $rs = [
                             'result' => 1,
                             'authors' => $this->getAuthors(),
-                            'categories' => $this->getCategories(),
+                            'categories' => $this->getCategories(isset($post['page_type']) ? $post['page_type'] : 'post'),
                             'types' => $this->getPostTypes(),
                             'version' => $this->getVersion()
                         ];
@@ -760,31 +760,6 @@ if (!class_exists('SEOWriting')) {
             }
         }
 
-        /**
-         * @param string $category
-         * @return array<int>
-         */
-        private function getPostCategory($category)
-        {
-            if (strlen($category) > 0) {
-                $categories = $this->getCategories();
-                $ids = array_map('intval', explode(',', $category));
-
-                $result = [];
-                foreach ($categories as $cat) {
-                    if (in_array($cat['id'], $ids)) {
-                        $result[] = (int)$cat['id'];
-                    }
-                }
-
-                if (count($result) > 0) {
-                    return $result;
-                }
-            }
-
-            return [0];
-        }
-
         private function publishPost($user_id, $data)
         {
             global $current_user;
@@ -827,24 +802,22 @@ if (!class_exists('SEOWriting')) {
                     : '',
             ];
 
-            $taxonomies = get_object_taxonomies($post_type);
-            if (in_array('category', $taxonomies)) {
-                $new_post['post_category'] = $this->getPostCategory(isset($data['category']) ? sanitize_text_field($data['category']) : '');
+            if (in_array('category', get_object_taxonomies($post_type))) {
+                $new_post['post_category'] =  array_map('intval', explode(',', isset($data['category']) ? sanitize_text_field($data['category']) : '0'));
             } else {
                 $ids = array_map('intval', explode(',', sanitize_text_field($data['category'])));
                 foreach ($ids as $id) {
                     $term = get_term($id);
                     if (!is_wp_error($term) && $term) {
                         /** @phpstan-ignore-next-line */
-                        $taxonomy_name = get_taxonomy($term->taxonomy)->labels->singular_name;
+                        $taxonomy_name = $term->taxonomy;
                         if (!isset($new_post['tax_input'])) {
                             $new_post['tax_input'] = [];
                         }
                         if (!isset($new_post['tax_input'][$taxonomy_name])) {
                             $new_post['tax_input'][$taxonomy_name] = [];
                         }
-                        /** @phpstan-ignore-next-line */
-                        $new_post['tax_input'][$taxonomy_name][] = $term->name;
+                        $new_post['tax_input'][$taxonomy_name][] = $id;
                     }
                 }
             }
@@ -1034,20 +1007,28 @@ if (!class_exists('SEOWriting')) {
         /**
          * @return array<array<string, int|string>>
          */
-        public function getCategories()
+        public function getCategories($page_type = 'post')
         {
-            $categories = get_categories([
-                'hide_empty' => 0
-            ]);
-
+            $taxonomies = get_object_taxonomies($page_type, 'names');
             $result = [];
-            foreach ($categories as $category) {
-                /** @var WP_Term $category */
-                $result[] = [
-                    'id' => (int)$category->term_id,
-                    'name' => $category->name,
-                    'parent' => (int)$category->parent
-                ];
+            foreach ($taxonomies as $taxonomy) {
+                $term_query = new WP_Term_Query([
+                    'taxonomy' => $taxonomy,
+                    'hide_empty' => false,
+                ]);
+
+                if (!empty($term_query->terms)) {
+                    foreach ($term_query->terms as $term) {
+                        if ($term->taxonomy === 'post_tag' || $term->taxonomy === 'elementor_library_type') {
+                            continue;
+                        }
+                        $result[] = [
+                            'id' => (int)$term->term_id,
+                            'name' => $term->name,
+                            'parent' => (int)$term->parent
+                        ];
+                    }
+                }
             }
 
             return $result;
