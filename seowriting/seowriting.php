@@ -207,7 +207,24 @@ if (!class_exists('SEOWriting')) {
          */
         public function onUpdate($upgrader_object, $options)
         {
-            return $this->getAPIClient()->update($this->version);
+            if (
+                !is_array($options)
+                || !isset($options['action'])
+                || $options['action'] !== 'update'
+                || !isset($options['type'])
+                || $options['type'] !== 'plugin'
+                || !isset($options['plugins'])
+                || !isset($options['plugins'][0])
+            ) {
+                return false;
+            }
+            foreach ($options['plugins']  as $plugin) {
+                if (strpos($plugin, 'seowriting.php') !== false) {
+                    return $this->getAPIClient()->update($this->version);
+                }
+            }
+
+            return false;
         }
 
         public function ksesAllowedHtml($allowed, $context)

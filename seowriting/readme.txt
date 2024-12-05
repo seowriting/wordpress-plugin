@@ -1,10 +1,10 @@
 === SEOWriting ===
 Contributors: SEOWriting
 Tags: seo writing, AI tool, AI writing, generation text
-Tested up to: 6.6.2
+Tested up to: 6.7.1
 Requires at least: 4.9
 Requires PHP: 5.6.20
-Stable tag: 1.9.1
+Stable tag: 1.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,10 +22,15 @@ The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowri
 
 == Changelog ==
 
+= 1.9.2 (2024/12/05) =
+
+Fix:
+* Notification about plugin version update
+
 = 1.9.1 (2024/10/31) =
 
-Feature:
-* Fixed loading and setting categories for custom post types
+Fix:
+* Loading and setting categories for custom post types
 
 = 1.9.0 (2024/10/30) =
 
