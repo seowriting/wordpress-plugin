@@ -703,9 +703,29 @@ if (!class_exists('SEOWriting')) {
             return $content;
         }
 
-        private function downloadImages(&$data, $post_id, $featured_image)
+        private function deleteImages($post_id)
+        {
+            $images = get_children([
+                'post_parent'    => $post_id,
+                'post_type'      => 'attachment',
+                'post_mime_type' => 'image',
+                'numberposts'    => -1,
+            ]);
+
+            if (!empty($images)) {
+                foreach ($images as $attachment) {
+                    wp_delete_attachment($attachment->ID, true);
+                }
+            }
+        }
+
+        private function downloadImages(&$data, $post_id, $featured_image, $is_update = false)
         {
             $html = $data['html'];
+
+            if ($is_update === true) {
+                $this->deleteImages($post_id);
+            }
 
             if (preg_match_all('/<img .*src="([^">]+)"[^>]*>/uU', $html, $matches)) {
                 $data['images'] = [];
@@ -859,7 +879,13 @@ if (!class_exists('SEOWriting')) {
                 }
             }
 
-            $post_id = wp_insert_post($new_post);
+            $is_update = isset($data['post_id']);
+            if ($is_update) {
+                $new_post['ID'] = intval($data['post_id']);
+                $post_id = wp_update_post($new_post, true);
+            } else {
+                $post_id = wp_insert_post($new_post, true);
+            }
 
             if (is_wp_error($post_id)) {
                 return [
@@ -880,7 +906,7 @@ if (!class_exists('SEOWriting')) {
                 }
             }
 
-            $this->downloadImages($data, $post_id, isset($data['featured_image']));
+            $this->downloadImages($data, $post_id, isset($data['featured_image']), $is_update);
 
             include_once(__DIR__ . '/classes/post-meta.php');
             $pm = new \SEOWriting\PostMeta($post_id);
