@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.9.3
+ * Version:           1.10.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
