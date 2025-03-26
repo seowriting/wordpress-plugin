@@ -226,27 +226,24 @@ class APIClient
                     $image_size = @getimagesize($tmp_name);
 
                     if ($image_size && ($image_size['mime'] === $content_type)) {
-                        $name = basename($url);
-                        if (strlen($filename) > 0) {
-                            $filename = trim($filename, " \n\r\t.?!;:/\\#");
+                        $filename = trim($filename, " \n\r\t.?!;:/\\#");
+                        if (strlen($filename) === 0) {
+                            $filename = "image";
+                        }
+                        $ext = "." . explode("/", $content_type)[1];
+                        $max_length = self::MAX_FILENAME_LENGTH - strlen($ext);
 
-                            if (strlen($filename) > 0) {
-                                $ext = "." . explode("/", $content_type)[1];
-                                $max_length = self::MAX_FILENAME_LENGTH - strlen($ext);
+                        if (mb_strlen($filename, \SEOWriting::MB_ENCODING) > $max_length) {
+                            $_name = mb_substr($filename, 0, $max_length, \SEOWriting::MB_ENCODING);
 
-                                if (mb_strlen($filename, \SEOWriting::MB_ENCODING) > $max_length) {
-                                    $_name = mb_substr($filename, 0, $max_length, \SEOWriting::MB_ENCODING);
-
-                                    if (preg_match('/^\s/us', mb_substr($filename, $max_length, 1, \SEOWriting::MB_ENCODING))) {
-                                        $filename = trim($_name);
-                                    } else {
-                                        $filename = preg_replace('/^(.+)\s+\S+$/us', '\\1', $_name);
-                                    }
-                                }
-
-                                $name = $filename . $ext;
+                            if (preg_match('/^\s/us', mb_substr($filename, $max_length, 1, \SEOWriting::MB_ENCODING))) {
+                                $filename = trim($_name);
+                            } else {
+                                $filename = preg_replace('/^(.+)\s+\S+$/us', '\\1', $_name);
                             }
                         }
+
+                        $name = $filename . $ext;
 
                         return [
                             'name' => sanitize_file_name($name),
@@ -261,7 +258,7 @@ class APIClient
                 }
                 @unlink($tmp_name);
             } else {
-                $this->error = 'unknown_type='.$content_type;
+                $this->error = 'unknown_type=' . $content_type;
             }
         } else {
             $this->error = 'response_code=' . wp_remote_retrieve_response_code($response);
