@@ -210,6 +210,9 @@ class APIClient
             return false;
         } elseif (wp_remote_retrieve_response_code($response) === 200) {
             $content_type = wp_remote_retrieve_header($response, 'content-type');
+            if (is_array($content_type)) {
+                $content_type = $content_type[0];
+            }
             $size = wp_remote_retrieve_header($response, 'content-length');
             if (is_array($size)) {
                 $size = $size[0];
