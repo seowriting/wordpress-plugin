@@ -199,14 +199,6 @@ class APIClient
         ];
     }
 
-    public function checkImageUrl($url)
-    {
-        if (strpos($url, $this->site_url) === 0) {
-            return preg_match('#^/docs/[0-9]+/[0-9a-z]+/[0-9]+/[0-9a-z]+\.(jpg|gif|png|webp)$#', substr($url, strlen($this->site_url)));
-        }
-        return false;
-    }
-
     public function loadImage($url, $filename = '')
     {
         $settings = $this->plugin->getSettings();

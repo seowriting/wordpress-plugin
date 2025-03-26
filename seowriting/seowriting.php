@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.10.3
+ * Version:           1.10.4
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.10.3';
+        public $version = '1.10.4';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -218,7 +218,7 @@ if (!class_exists('SEOWriting')) {
             ) {
                 return false;
             }
-            foreach ($options['plugins']  as $plugin) {
+            foreach ($options['plugins'] as $plugin) {
                 if (strpos($plugin, 'seowriting.php') !== false) {
                     return $this->getAPIClient()->update($this->version);
                 }
@@ -518,7 +518,7 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'post' => $this->getPost(isset($post['post_id']) ? sanitize_text_field($post['post_id']) : '')
                         ];
-                    }  elseif ($action === 'get_post_slug') {
+                    } elseif ($action === 'get_post_slug') {
                         $rs = [
                             'result' => 1,
                             'slug' => get_permalink(intval($post['post_id']))
@@ -536,7 +536,7 @@ if (!class_exists('SEOWriting')) {
                             'types' => $this->getPostTypes(),
                             'version' => $this->getVersion()
                         ];
-                    }  elseif ($action === 'search_pages') {
+                    } elseif ($action === 'search_pages') {
                         $rs = [
                             'result' => 1,
                             'pages' => $this->searchPages(sanitize_text_field($post['q']), isset($post['limit']) ? intval($post['limit']) : 10)
@@ -706,10 +706,10 @@ if (!class_exists('SEOWriting')) {
         private function deleteImages($post_id)
         {
             $images = get_children([
-                'post_parent'    => $post_id,
-                'post_type'      => 'attachment',
+                'post_parent' => $post_id,
+                'post_type' => 'attachment',
                 'post_mime_type' => 'image',
-                'numberposts'    => -1,
+                'numberposts' => -1,
             ]);
 
             if (is_array($images) && isset($images[0])) {
@@ -738,53 +738,51 @@ if (!class_exists('SEOWriting')) {
                 $api = $this->getAPIClient();
                 $images = [];
                 foreach ($matches[1] as $i => $path) {
-                    if ($api->checkImageUrl($path)) {
-                        $alt = '';
-                        if (preg_match('/ alt="([^"]*)"/u', $matches[0][$i], $_matches)) {
-                            $alt = html_entity_decode($_matches[1], ENT_COMPAT | ENT_HTML401, self::MB_ENCODING);
-                        }
+                    $alt = '';
+                    if (preg_match('/ alt="([^"]*)"/u', $matches[0][$i], $_matches)) {
+                        $alt = html_entity_decode($_matches[1], ENT_COMPAT | ENT_HTML401, self::MB_ENCODING);
+                    }
 
-                        $attachment_id = 0;
-                        if (in_array($path, $images)) {
-                            $attachment_id = array_search($path, $images);
-                        } elseif ($file = $api->loadImage($path, $alt)) {
-                            $id = media_handle_sideload($file, $post_id);
-                            $api->deleteImage($file);
+                    $attachment_id = 0;
+                    if (in_array($path, $images)) {
+                        $attachment_id = array_search($path, $images);
+                    } elseif ($file = $api->loadImage($path, $alt)) {
+                        $id = media_handle_sideload($file, $post_id);
+                        $api->deleteImage($file);
 
-                            if (is_wp_error($id)) {
-                                $this->writeLog([
-                                    'type' => 'downloadImagesWpError',
-                                    'data' => $id->get_error_messages(),
-                                ]);
-                            } else {
-                                $attachment_id = $id;
-                                $images[$id] = $path;
-
-                                if (strlen($alt) > 0) {
-                                    update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt);
-                                }
-                            }
-                        } else {
+                        if (is_wp_error($id)) {
                             $this->writeLog([
                                 'type' => 'downloadImagesWpError',
-                                'path' => $path,
-                                'data' => $api->error,
+                                'data' => $id->get_error_messages(),
                             ]);
-                        }
+                        } else {
+                            $attachment_id = $id;
+                            $images[$id] = $path;
 
-                        if ($attachment_id > 0) {
-                            if ($featured_image) {
-                                set_post_thumbnail($post_id, $attachment_id);
-                                $featured_image = false;
-
-                                $html = str_replace($matches[0][$i], '', $html);
-                            } else {
-                                $data['images'][wp_get_attachment_url($attachment_id)] = $attachment_id;
-                                $html = str_replace($matches[0][$i],
-                                    get_image_tag($attachment_id, $alt, $alt, 'center', 'large'),
-                                    $html
-                                );
+                            if (strlen($alt) > 0) {
+                                update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt);
                             }
+                        }
+                    } else {
+                        $this->writeLog([
+                            'type' => 'downloadImagesWpError',
+                            'path' => $path,
+                            'data' => $api->error,
+                        ]);
+                    }
+
+                    if ($attachment_id > 0) {
+                        if ($featured_image) {
+                            set_post_thumbnail($post_id, $attachment_id);
+                            $featured_image = false;
+
+                            $html = str_replace($matches[0][$i], '', $html);
+                        } else {
+                            $data['images'][wp_get_attachment_url($attachment_id)] = $attachment_id;
+                            $html = str_replace($matches[0][$i],
+                                get_image_tag($attachment_id, $alt, $alt, 'center', 'large'),
+                                $html
+                            );
                         }
                     }
                 }
@@ -843,7 +841,7 @@ if (!class_exists('SEOWriting')) {
             ];
 
             if (in_array('category', get_object_taxonomies($post_type))) {
-                $new_post['post_category'] =  array_map('intval', explode(',', isset($data['category']) ? sanitize_text_field($data['category']) : '0'));
+                $new_post['post_category'] = array_map('intval', explode(',', isset($data['category']) ? sanitize_text_field($data['category']) : '0'));
             } else {
                 $ids = array_map('intval', explode(',', sanitize_text_field($data['category'])));
                 foreach ($ids as $id) {
