@@ -13,7 +13,6 @@ class APIClient
      */
     private $plugin;
     private $base_url = 'https://seowriting.ai/api/v1/';
-    private $site_url;
     private $ssl_verify = false;
     private $http_timeout = 120;
     /**
@@ -30,7 +29,6 @@ class APIClient
     public function __construct($plugin)
     {
         $this->plugin = $plugin;
-        $this->site_url = substr($this->base_url, 0, (int)strpos($this->base_url, '/api/v1/'));
     }
 
     private function getSign($data, $secret)
