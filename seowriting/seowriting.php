@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.10.9
+ * Version:           1.11.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,14 +27,17 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.10.9';
+        public $version = '1.11.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
         private $api_client = null;
         private $settings = null;
         private $log_file = __DIR__ . '/log.php';
+        private $css_file = __DIR__ . '/style.css';
 
+        const SETTINGS_CSS = "seowriting_css";
+        const SETTINGS_CSS_HASH = "seowriting_css_hash";
         const SETTINGS_DEBUG_KEY = 'seowriting_debug';
         const SETTINGS_GENERATOR_NAME = 'seowriting';
         const SETTINGS_GENERATOR_NAME_KEY = 'seowriting_generator';
@@ -107,6 +110,20 @@ if (!class_exists('SEOWriting')) {
             add_action('requests-requests.before_parse', [$this, 'onAfterRequest'], 10, 6);
             add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
 
+            add_action('wp_enqueue_scripts', [$this, 'injectCSS'], 999999);
+        }
+
+        public function injectCSS()
+        {
+            if (is_admin() || !is_readable($this->css_file)) {
+                return;
+            }
+            wp_enqueue_style(
+                'seowriting',
+                plugins_url('style.css', __FILE__),
+                [],
+                $this->version . '_' . get_option(self::SETTINGS_CSS_HASH, md5(microtime(true)))
+            );
         }
 
         public function onPluginsLoaded()
@@ -125,6 +142,7 @@ if (!class_exists('SEOWriting')) {
         public function activate()
         {
             update_option(self::SETTINGS_PLUGIN_VERSION, $this->version);
+            $this->setCss(base64_decode(DEFAULT_CSS));
         }
 
         public function onAfterRequest(&$response, $url, $headers, $data, $type, $options)
@@ -230,12 +248,41 @@ if (!class_exists('SEOWriting')) {
         public function ksesAllowedHtml($allowed, $context)
         {
             if (!is_array($context) && ($context === 'post')) {
+                $allowed['a']['rel'] = true;
+                $allowed['a']['target'] = true;
                 $allowed['div']['itemscope'] = true;
                 $allowed['div']['itemprop'] = true;
                 $allowed['div']['itemtype'] = true;
                 $allowed['h3']['itemprop'] = true;
-                $allowed['a']['rel'] = true;
-                $allowed['a']['target'] = true;
+                $allowed['iframe'] = [
+                    'src'             => true,
+                    'height'          => true,
+                    'width'           => true,
+                    'frameborder'     => true,
+                    'allowfullscreen' => true,
+                    'allow'           => true,
+                    'loading'         => true,
+                    'referrerpolicy'  => true,
+                    'sandbox'         => true,
+                    'title'           => true,
+                    'onload'          => true,
+                    'class'           => true
+                ];
+                $allowed['input'] = [
+                    'class' => true,
+                    'placeholder' => true,
+                    'type' => true
+                ];
+                $allowed['option'] = [
+                    'class' => true
+                ];
+                $allowed['select'] = [
+                    'class' => true
+                ];
+                $allowed['textarea'] = [
+                    'class' => true,
+                    'placeholder' => true
+                ];
             }
             return $allowed;
         }
@@ -541,6 +588,12 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'pages' => $this->searchPages(sanitize_text_field($post['q']), isset($post['limit']) ? intval($post['limit']) : 10)
                         ];
+                    } elseif ($action === 'set_css') {
+                        $err = $this->setCss(sanitize_text_field($post['css']));
+                        $rs = [
+                            'result' => strlen($err) > 0 ? 0 : 1,
+                            'error' => $err,
+                        ];
                     } else {
                         $rs = [
                             'error' => 'Plugin does not support this feature'
@@ -817,10 +870,11 @@ if (!class_exists('SEOWriting')) {
                     $post_time = $new_post_time;
                 }
             }
-            $content = wp_kses_post(
+            $content = wp_kses(
                 $this->clearSchemaSection(
                     str_replace('itemscope="" itemprop=', 'itemscope itemprop=', $data['html'])
-                )
+                ),
+                wp_kses_allowed_html('post')
             );
             $data['html'] = $content;
             if (isset($data['author_id'])) {
@@ -887,7 +941,6 @@ if (!class_exists('SEOWriting')) {
             } else {
                 $post_id = wp_insert_post($new_post, true);
             }
-
             if (is_wp_error($post_id)) {
                 return [
                     'result' => 0,
@@ -934,6 +987,32 @@ if (!class_exists('SEOWriting')) {
             }
 
             return $where;
+        }
+
+        /**
+         * @param string $css
+         * @return string
+         */
+        public function setCss($css)
+        {
+            $css = trim($css);
+            if (strlen($css) === 0) {
+                return "empty css";
+            }
+
+            delete_option(self::SETTINGS_CSS);
+            $res = intval(update_option(self::SETTINGS_CSS, $css));
+            if ($res === 1) {
+                file_put_contents($this->css_file, $css);
+            } else {
+                return "cannot update css option";
+            }
+            delete_option(self::SETTINGS_CSS_HASH);
+            if (!update_option(self::SETTINGS_CSS_HASH, md5($css))) {
+                return "cannot update css hash option";
+            }
+
+            return "";
         }
 
         /**
