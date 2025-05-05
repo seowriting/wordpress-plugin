@@ -122,7 +122,7 @@ if (!class_exists('SEOWriting')) {
                 'seowriting',
                 plugins_url('style.css', __FILE__),
                 [],
-                $this->version . '_' . get_option(self::SETTINGS_CSS_HASH, md5(microtime(true)))
+                $this->version . '_' . get_option(self::SETTINGS_CSS_HASH, md5((string)microtime(true)))
             );
         }
 
