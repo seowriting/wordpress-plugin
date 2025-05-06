@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.1
+ * Version:           1.11.2
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.1';
+        public $version = '1.11.2';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -141,7 +141,7 @@ if (!class_exists('SEOWriting')) {
 
         public function activate()
         {
-            update_option(self::SETTINGS_PLUGIN_VERSION, $this->version);
+            $this->setPluginVersion();
             $this->setDefaultCSS();
         }
 
@@ -230,7 +230,6 @@ if (!class_exists('SEOWriting')) {
          */
         public function onUpdate($upgrader_object, $options)
         {
-            $this->setDefaultCSS();
             if (
                 !is_array($options)
                 || !isset($options['action'])
@@ -244,11 +243,17 @@ if (!class_exists('SEOWriting')) {
             }
             foreach ($options['plugins'] as $plugin) {
                 if (strpos($plugin, 'seowriting.php') !== false) {
+                    $this->setPluginVersion();
+                    $this->setDefaultCSS();
                     return $this->getAPIClient()->update($this->version);
                 }
             }
 
             return false;
+        }
+
+        private function setPluginVersion() {
+            update_option(self::SETTINGS_PLUGIN_VERSION, $this->version);
         }
 
         public function ksesAllowedHtml($allowed, $context)
