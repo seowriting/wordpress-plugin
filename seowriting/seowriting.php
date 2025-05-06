@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.2
+ * Version:           1.11.3
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.2';
+        public $version = '1.11.3';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -36,14 +36,15 @@ if (!class_exists('SEOWriting')) {
         private $log_file = __DIR__ . '/log.php';
         private $css_file = __DIR__ . '/style.css';
 
-        const SETTINGS_CSS = "seowriting_css";
-        const SETTINGS_CSS_HASH = "seowriting_css_hash";
+        const SETTINGS_CSS_KEY = "seowriting_css";
+        const SETTINGS_CSS_HASH_KEY = "seowriting_css_hash";
         const SETTINGS_DEBUG_KEY = 'seowriting_debug';
         const SETTINGS_GENERATOR_NAME = 'seowriting';
         const SETTINGS_GENERATOR_NAME_KEY = 'seowriting_generator';
+        const SETTINGS_INIT = 'seowriting_init';
         const SETTINGS_KEY = 'seowriting_settings';
         const SETTINGS_PLUGIN_NAME_KEY = 'seowriting_plugin_name';
-        const SETTINGS_PLUGIN_VERSION = 'seowriting_plugin_version';
+        const SETTINGS_PLUGIN_VERSION_KEY = 'seowriting_plugin_version';
         const REST_VERSION = 1;
         const MB_ENCODING = 'UTF-8';
 
@@ -111,6 +112,7 @@ if (!class_exists('SEOWriting')) {
             add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
 
             add_action('wp_enqueue_scripts', [$this, 'injectCSS'], 999999);
+            add_action('init', [$this, 'onInit']);
         }
 
         public function injectCSS()
@@ -122,14 +124,12 @@ if (!class_exists('SEOWriting')) {
                 'seowriting',
                 plugins_url('style.css', __FILE__),
                 [],
-                $this->version . '_' . get_option(self::SETTINGS_CSS_HASH, md5((string)microtime(true)))
+                $this->version . '_' . get_option(self::SETTINGS_CSS_HASH_KEY, md5((string)microtime(true)))
             );
         }
 
         public function onPluginsLoaded()
         {
-            /** @phpstan-ignore-next-line */
-            $prevVersion = (string)get_option(self::SETTINGS_PLUGIN_VERSION);
             /** @phpstan-ignore-next-line */
             $pluginName = (string)get_option(self::SETTINGS_PLUGIN_NAME_KEY);
             if (strlen($pluginName) > 0 && $pluginName !== basename(__DIR__)) {
@@ -141,12 +141,7 @@ if (!class_exists('SEOWriting')) {
 
         public function activate()
         {
-            $this->setPluginVersion();
-            $this->setDefaultCSS();
-        }
-
-        private function setDefaultCSS()
-        {
+            update_option(self::SETTINGS_PLUGIN_VERSION_KEY, $this->version);
             $this->setCss(base64_decode(DEFAULT_CSS));
         }
 
@@ -243,17 +238,22 @@ if (!class_exists('SEOWriting')) {
             }
             foreach ($options['plugins'] as $plugin) {
                 if (strpos($plugin, 'seowriting.php') !== false) {
-                    $this->setPluginVersion();
-                    $this->setDefaultCSS();
-                    return $this->getAPIClient()->update($this->version);
+                    update_option(self::SETTINGS_INIT, true);
+                    return true;
                 }
             }
 
             return false;
         }
 
-        private function setPluginVersion() {
-            update_option(self::SETTINGS_PLUGIN_VERSION, $this->version);
+        private function onInit()
+        {
+            if (!get_option(self::SETTINGS_INIT)) {
+                return;
+            }
+            delete_option(self::SETTINGS_INIT);
+            $this->activate();
+            $this->getAPIClient()->update($this->version);
         }
 
         public function ksesAllowedHtml($allowed, $context)
@@ -1011,15 +1011,15 @@ if (!class_exists('SEOWriting')) {
                 return "empty css";
             }
 
-            delete_option(self::SETTINGS_CSS);
-            $res = intval(update_option(self::SETTINGS_CSS, $css));
+            delete_option(self::SETTINGS_CSS_KEY);
+            $res = intval(update_option(self::SETTINGS_CSS_KEY, $css));
             if ($res === 1) {
                 file_put_contents($this->css_file, $css);
             } else {
                 return "cannot update css option";
             }
-            delete_option(self::SETTINGS_CSS_HASH);
-            if (!update_option(self::SETTINGS_CSS_HASH, md5($css))) {
+            delete_option(self::SETTINGS_CSS_HASH_KEY);
+            if (!update_option(self::SETTINGS_CSS_HASH_KEY, md5($css))) {
                 return "cannot update css hash option";
             }
 
