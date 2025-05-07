@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.3
+ * Version:           1.11.5
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.3';
+        public $version = '1.11.5';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -120,12 +120,14 @@ if (!class_exists('SEOWriting')) {
             if (is_admin() || !is_readable($this->css_file)) {
                 return;
             }
-            wp_enqueue_style(
-                'seowriting',
-                plugins_url('style.css', __FILE__),
-                [],
-                $this->version . '_' . get_option(self::SETTINGS_CSS_HASH_KEY, md5((string)microtime(true)))
-            );
+            if (is_single() && is_main_query() && get_post_meta((int)get_the_ID(), self::SETTINGS_GENERATOR_NAME_KEY, true) == self::SETTINGS_GENERATOR_NAME) {
+                wp_enqueue_style(
+                    'seowriting',
+                    plugins_url('style.css', __FILE__),
+                    [],
+                    $this->version . '_' . get_option(self::SETTINGS_CSS_HASH_KEY, md5((string)microtime(true)))
+                );
+            }
         }
 
         public function onPluginsLoaded()
@@ -142,7 +144,7 @@ if (!class_exists('SEOWriting')) {
         public function activate()
         {
             update_option(self::SETTINGS_PLUGIN_VERSION_KEY, $this->version);
-            $this->setCss(base64_decode(DEFAULT_CSS));
+            $this->setCss(base64_decode(SW_DEFAULT_CSS));
         }
 
         public function onAfterRequest(&$response, $url, $headers, $data, $type, $options)
@@ -246,7 +248,7 @@ if (!class_exists('SEOWriting')) {
             return false;
         }
 
-        private function onInit()
+        public function onInit()
         {
             if (!get_option(self::SETTINGS_INIT)) {
                 return;

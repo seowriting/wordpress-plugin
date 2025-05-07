@@ -96,7 +96,7 @@ class APIClient
     {
         $settings = $this->plugin->getSettings();
         $this->request('update', [
-            'api_key' => $settings['api_key'],
+            'api_key' => isset($settings['api_key']) ? $settings['api_key'] : 'null',
             'new_version' => $newVersion,
         ]);
 
