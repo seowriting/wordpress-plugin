@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.7
+ * Version:           1.11.8
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.7';
+        public $version = '1.11.8';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -102,7 +102,7 @@ if (!class_exists('SEOWriting')) {
             add_action('rest_api_init', [$this, 'initRest']);
             add_filter('wp_kses_allowed_html', [$this, 'ksesAllowedHtml'], 10, 2);
 
-            add_filter('the_content', [$this, 'restoreSchemaSection'], 20);
+            add_filter('the_content', [$this, 'onContent'], 20);
             add_action("wp_head", [$this, 'printJSONLD'], 20);
 
             add_action('transition_post_status', [$this, 'onChangePostStatus'], 10, 3);
@@ -111,23 +111,7 @@ if (!class_exists('SEOWriting')) {
             add_action('requests-requests.before_parse', [$this, 'onAfterRequest'], 10, 6);
             add_action('plugins_loaded', [$this, 'onPluginsLoaded']);
 
-            add_action('wp_enqueue_scripts', [$this, 'injectCSS'], 999999);
             add_action('init', [$this, 'onInit']);
-        }
-
-        public function injectCSS()
-        {
-            if (is_admin() || !is_readable($this->css_file)) {
-                return;
-            }
-            if (is_single() && is_main_query() && get_post_meta((int)get_the_ID(), self::SETTINGS_GENERATOR_NAME_KEY, true) == self::SETTINGS_GENERATOR_NAME) {
-                wp_enqueue_style(
-                    'seowriting',
-                    plugins_url('style.css', __FILE__),
-                    [],
-                    $this->version . '_' . get_option(self::SETTINGS_CSS_HASH_KEY, md5((string)microtime(true)))
-                );
-            }
         }
 
         public function onPluginsLoaded()
@@ -735,14 +719,25 @@ if (!class_exists('SEOWriting')) {
             return false;
         }
 
-        public function restoreSchemaSection($content)
+        private function addStyles($content)
         {
-            if (!is_single() || $this->isJSONSchema()) {
+            if (is_single() && get_post_meta((int)get_the_ID(), self::SETTINGS_GENERATOR_NAME_KEY, true) == self::SETTINGS_GENERATOR_NAME && is_readable($this->css_file)) {
+                $content = str_replace('styled-container', 'styled-container-'.md5((string)microtime(true)), '<style>'.file_get_contents($this->css_file).'</style>' . $content);
+            }
+            return $content;
+        }
+
+        public function onContent($content)
+        {
+            if (!is_single()) {
                 return $content;
+            }
+            if ($this->isJSONSchema()) {
+                return $this->addStyles($content);
             }
             $qa = $this->qaList($content);
             if (!isset($qa[2]) || !isset($qa[0][0]) || !isset($qa[1][0])) {
-                return $content;
+                return $this->addStyles($content);
             }
             $questions = $qa[0];
             $answers = $qa[1];
@@ -764,9 +759,7 @@ if (!class_exists('SEOWriting')) {
             }
             $out .= '</section>';
 
-            $content = preg_replace('#<section class="schema-section">(.*?)</section>#s', $out, $content);
-
-            return $content;
+            return $this->addStyles(preg_replace('#<section class="schema-section">(.*?)</section>#s', $out, $content));
         }
 
         private function deleteImages($post_id)
