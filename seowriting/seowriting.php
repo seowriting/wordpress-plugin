@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.6
+ * Version:           1.11.7
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.6';
+        public $version = '1.11.7';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -214,7 +214,7 @@ if (!class_exists('SEOWriting')) {
             $settings = $this->getSettings();
             $this->getAPIClient()->changePostStatus($status, [
                 'post_id' => $post->ID,
-                'api_key' => $settings['api_key'],
+                'api_key' => isset($settings['api_key']) ? $settings['api_key'] : 'null',
             ]);
 
             return true;
@@ -1014,8 +1014,7 @@ if (!class_exists('SEOWriting')) {
             }
 
             delete_option(self::SETTINGS_CSS_KEY);
-            $res = intval(update_option(self::SETTINGS_CSS_KEY, $css));
-            if ($res === 1) {
+            if (intval(update_option(self::SETTINGS_CSS_KEY, $css)) === 1) {
                 file_put_contents($this->css_file, $css);
             } else {
                 return "cannot update css option";
