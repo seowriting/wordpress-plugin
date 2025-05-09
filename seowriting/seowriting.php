@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.8
+ * Version:           1.11.9
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.8';
+        public $version = '1.11.9';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -721,7 +721,7 @@ if (!class_exists('SEOWriting')) {
 
         private function addStyles($content)
         {
-            if (is_single() && get_post_meta((int)get_the_ID(), self::SETTINGS_GENERATOR_NAME_KEY, true) == self::SETTINGS_GENERATOR_NAME && is_readable($this->css_file)) {
+            if ((is_single() || is_page()) && get_post_meta((int)get_the_ID(), self::SETTINGS_GENERATOR_NAME_KEY, true) == self::SETTINGS_GENERATOR_NAME && is_readable($this->css_file)) {
                 $content = str_replace('styled-container', 'styled-container-'.md5((string)microtime(true)), '<style>'.file_get_contents($this->css_file).'</style>' . $content);
             }
             return $content;
@@ -729,7 +729,7 @@ if (!class_exists('SEOWriting')) {
 
         public function onContent($content)
         {
-            if (!is_single()) {
+            if (!is_single() && !is_page()) {
                 return $content;
             }
             if ($this->isJSONSchema()) {
