@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.11.9
+ * Version:           1.11.12
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.11.9';
+        public $version = '1.11.12';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -35,10 +35,10 @@ if (!class_exists('SEOWriting')) {
         private $settings = null;
         private $log_file = __DIR__ . '/log.php';
         private $css_file = __DIR__ . '/style.css';
+        private $default_css_file = __DIR__ . '/default.css';
 
         const SETTINGS_CSS_KEY = "seowriting_css";
         const SETTINGS_CSS_HASH_KEY = "seowriting_css_hash";
-        const SETTINGS_DEBUG_KEY = 'seowriting_debug';
         const SETTINGS_GENERATOR_NAME = 'seowriting';
         const SETTINGS_GENERATOR_NAME_KEY = 'seowriting_generator';
         const SETTINGS_INIT = 'seowriting_init';
@@ -128,7 +128,15 @@ if (!class_exists('SEOWriting')) {
         public function activate()
         {
             update_option(self::SETTINGS_PLUGIN_VERSION_KEY, $this->version);
-            $this->setCss(base64_decode(SW_DEFAULT_CSS));
+            $this->setCSS($this->readCSS());
+        }
+
+        /**
+         * @return string
+         */
+        private function readCSS()
+        {
+            return (string)(is_readable($this->css_file) ? @file_get_contents($this->css_file) : (is_readable($this->default_css_file) ? @file_get_contents($this->default_css_file) : ''));
         }
 
         public function onAfterRequest(&$response, $url, $headers, $data, $type, $options)
@@ -252,18 +260,18 @@ if (!class_exists('SEOWriting')) {
                 $allowed['div']['itemtype'] = true;
                 $allowed['h3']['itemprop'] = true;
                 $allowed['iframe'] = [
-                    'src'             => true,
-                    'height'          => true,
-                    'width'           => true,
-                    'frameborder'     => true,
+                    'src' => true,
+                    'height' => true,
+                    'width' => true,
+                    'frameborder' => true,
                     'allowfullscreen' => true,
-                    'allow'           => true,
-                    'loading'         => true,
-                    'referrerpolicy'  => true,
-                    'sandbox'         => true,
-                    'title'           => true,
-                    'onload'          => true,
-                    'class'           => true
+                    'allow' => true,
+                    'loading' => true,
+                    'referrerpolicy' => true,
+                    'sandbox' => true,
+                    'title' => true,
+                    'onload' => true,
+                    'class' => true
                 ];
                 $allowed['input'] = [
                     'class' => true,
@@ -289,11 +297,6 @@ if (!class_exists('SEOWriting')) {
             register_rest_route($this->getRestNamespace(), '/webhook', [
                 'methods' => 'POST',
                 'callback' => [$this, 'restWebhook'],
-                'permission_callback' => '__return_true'
-            ]);
-            register_rest_route($this->getRestNamespace(), '/debug', [
-                'methods' => 'POST',
-                'callback' => [$this, 'restDebug'],
                 'permission_callback' => '__return_true'
             ]);
             register_rest_route($this->getRestNamespace(), '/log', [
@@ -327,50 +330,6 @@ if (!class_exists('SEOWriting')) {
                 $res = json_decode('[' . str_replace("}\n", "},", trim(explode('?>', @file_get_contents($this->log_file))[1])) . ']', true);
             }
             return new WP_REST_Response($res, is_array($res) && count($res) > 0 ? 200 : 400);
-        }
-
-        /**
-         * @param WP_REST_Request $request
-         * @return WP_REST_Response|WP_Error
-         */
-        public function restDebug($request)
-        {
-            $res = [];
-            $post = $request->get_json_params();
-            $settings = $this->getSettings();
-            $client = $this->getAPIClient();
-            if (
-                get_option('seowriting_debug') === 'yes'
-                && isset($settings['secret'])
-                && isset($post['sign'])
-                && $client->checkSign($post, $settings['secret'])) {
-                include_once __DIR__ . '/../../../wp-admin/includes/plugin.php';
-                $plugins = [];
-                if (function_exists('get_plugins')) {
-                    foreach (get_plugins() as $pluginFile => $settings) {
-                        $plugins[] = [
-                            'name' => seowriting_escape(explode('/', $pluginFile)[0]),
-                            'version' => seowriting_escape($settings['Version']),
-                            'active' => is_plugin_active($pluginFile),
-                        ];
-                    }
-                }
-                $res = [
-                    'engine' => [
-                        'name' => 'wordpress',
-                        'version' => seowriting_escape(get_bloginfo('version')),
-                    ],
-                    'php' => [
-                        'version' => seowriting_escape(PHP_VERSION),
-                    ],
-                    'webServer' => [
-                        'name' => seowriting_escape(isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown'),
-                    ],
-                    'plugins' => $plugins,
-                ];
-            }
-
-            return new WP_REST_Response($res, count($res) > 0 ? 200 : 400);
         }
 
         /**
@@ -465,7 +424,6 @@ if (!class_exists('SEOWriting')) {
             $this->settings = [];
 
             delete_option(self::SETTINGS_KEY);
-            delete_option(self::SETTINGS_DEBUG_KEY);
             delete_option(self::SETTINGS_PLUGIN_NAME_KEY);
         }
 
@@ -490,7 +448,7 @@ if (!class_exists('SEOWriting')) {
 
         private function getWebhookData()
         {
-            $post = file_get_contents('php://input');
+            $post = @file_get_contents('php://input');
             if (!empty($post)) {
                 $_data = @json_decode($post, true);
                 if (is_array($_data)) {
@@ -586,10 +544,45 @@ if (!class_exists('SEOWriting')) {
                             'pages' => $this->searchPages(sanitize_text_field($post['q']), isset($post['limit']) ? intval($post['limit']) : 10)
                         ];
                     } elseif ($action === 'set_css') {
-                        $err = $this->setCss(sanitize_text_field($post['css']));
+                        $err = $this->setCSS(sanitize_text_field($post['css']));
                         $rs = [
                             'result' => strlen($err) > 0 ? 0 : 1,
                             'error' => $err,
+                        ];
+                    } elseif ($action === 'get_stat') {
+                        include_once __DIR__ . '/../../../wp-admin/includes/plugin.php';
+                        $plugins = [];
+                        if (function_exists('get_plugins')) {
+                            foreach (get_plugins() as $pluginFile => $settings) {
+                                $plugins[] = [
+                                    'name' => seowriting_escape(explode('/', $pluginFile)[0]),
+                                    'version' => seowriting_escape($settings['Version']),
+                                    'active' => is_plugin_active($pluginFile),
+                                    'author_uri' => seowriting_escape($settings['AuthorURI'])
+                                ];
+                            }
+                        }
+                        $theme = wp_get_theme();
+                        $rs = [
+                            'result' => 1,
+                            'stat' => [
+                                'engine' => [
+                                    'name' => 'wordpress',
+                                    'version' => seowriting_escape(get_bloginfo('version')),
+                                ],
+                                'php' => [
+                                    'version' => seowriting_escape(PHP_VERSION),
+                                ],
+                                'web_server' => [
+                                    'name' => seowriting_escape(isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : 'Unknown'),
+                                ],
+                                'plugins' => $plugins,
+                                'theme' => [
+                                    'name' => $theme->get('Name'),
+                                    'version' => $theme->get('Version'),
+                                    'uri' => $theme->get('ThemeURI'),
+                                ]
+                            ]
                         ];
                     } else {
                         $rs = [
@@ -722,7 +715,7 @@ if (!class_exists('SEOWriting')) {
         private function addStyles($content)
         {
             if ((is_single() || is_page()) && get_post_meta((int)get_the_ID(), self::SETTINGS_GENERATOR_NAME_KEY, true) == self::SETTINGS_GENERATOR_NAME && is_readable($this->css_file)) {
-                $content = str_replace('styled-container', 'styled-container-'.md5((string)microtime(true)), '<style>'.file_get_contents($this->css_file).'</style>' . $content);
+                $content = str_replace('styled-container', 'styled-container-' . md5((string)microtime(true)), '<style>' . $this->readCSS() . '</style>' . $content);
             }
             return $content;
         }
@@ -999,7 +992,7 @@ if (!class_exists('SEOWriting')) {
          * @param string $css
          * @return string
          */
-        public function setCss($css)
+        public function setCSS($css)
         {
             $css = trim($css);
             if (strlen($css) === 0) {

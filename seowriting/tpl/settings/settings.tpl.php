@@ -34,19 +34,6 @@ $this->form_action();
         }
         ?>
         <tr>
-            <th>Debug</th>
-            <td>
-                <div class="mb-1">Enable debugging mode:</div>
-                <?php echo $this->render_select('seowriting_debug', ['no' => 'No', 'yes' => 'Yes']); ?>
-                <div class="seowriting-desc"><?php
-                    echo esc_html__('We may ask you to enable debugging mode if you contact us', 'seowriting'),
-                        '&nbsp;<a href="' . esc_url('mailto:support@seowriting.ai') . '" target="blank">',
-                    esc_html__('here', 'seowriting'),
-                    '</a>';
-                    ?></div>
-            </td>
-        </tr>
-        <tr>
             <th>Rename</th>
             <td>
                 <div class="mb-1">Rename Plugin Folder for Anonymity:</div>

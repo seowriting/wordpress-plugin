@@ -138,7 +138,7 @@ class SettingsForm
             exit;
         }
 
-        $keys = ['sw_shema_type', 'seowriting_split_to_elementor', 'seowriting_debug', 'seowriting_plugin_name'];
+        $keys = ['sw_shema_type', 'seowriting_split_to_elementor', 'seowriting_plugin_name'];
         $fields_to_update = [];
         foreach ($keys as $key) {
             if (array_key_exists($key, $_POST)) {

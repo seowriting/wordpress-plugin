@@ -48,15 +48,6 @@ class PostMeta
         }
     }
 
-    private function elementorReplace($s)
-    {
-        return str_replace(
-            ['"', '/', PHP_EOL],
-            ['\"', '\/', ''],
-            $s
-        );
-    }
-
     public function set($data)
     {
         $title = isset($data['title']) ? $data['title'] : '';
@@ -73,74 +64,9 @@ class PostMeta
             $this->setValue('_elementor_template_type', 'wp-post');
             $plugin_data = get_plugin_data(WP_PLUGIN_DIR . '/' . self::PLUGIN_ELEMENTOR);
             $this->setValue('_elementor_version', $plugin_data['Version']);
-            libxml_use_internal_errors(true);
-            $dom = new DOMDocument();
-            libxml_use_internal_errors(false);
-            $hNames = ['h1' => true, 'h2' => true, 'h3' => true, 'h4' => true, 'h5' => true, 'h6' => true];
-            $dom->loadHTML('<?xml encoding="utf-8" ?><html><body><div>' . $data['html'] . '</div></body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-            $elementorSettings = [];
-            $id = 1;
-            $elements = is_null($dom->documentElement)
-                ? null
-                : $dom->documentElement->childNodes[0]->childNodes[0]->childNodes;
-            if (!is_null($elements)) {
-                foreach ($elements as $element) {
-                    $tagName = $element->tagName;
-                    if (is_null($tagName)) {
-                        continue;
-                    }
-                    if (isset($hNames[$tagName])) {
-                        $tagWidgetType = 'heading';
-                        $tagSettings = [
-                            'title' => $element->textContent,
-                        ];
-                        if ($tagName !== 'h1') {
-                            $tagSettings['header_size'] = $tagName;
-                        }
-                    } elseif ($tagName === 'img') {
-                        $src = $element->getAttribute('src');
-                        $tagWidgetType = 'image';
-                        $tagSettings = [
-                            'image' => [
-                                'url' => $this->elementorReplace($src),
-                                'id' => $data['images'][$src],
-                                'size' => '',
-                                'alt' => $element->getAttribute('alt'),
-                                'source' => 'library',
-                            ]
-                        ];
-                    } else {
-                        if ($tagName === 'p' && substr($element->textContent, 0, 23) === 'https://www.youtube.com') {
-                            $tagWidgetType = 'video';
-                            $tagSettings = [
-                                'youtube_url' => $this->elementorReplace($element->textContent),
-                            ];
-                        } else {
-                            $tagWidgetType = 'text-editor';
-                            $tagSettings = [
-                                'editor' => $this->elementorReplace($dom->saveHTML($element)),
-                            ];
-                        }
-                    }
-                    $elementorSettings[] = [
-                        'id' => (string)$id,
-                        'elType' => 'container',
-                        'settings' => [],
-                        'elements' => [
-                            [
-                                'id' => (string)++$id,
-                                'elType' => 'widget',
-                                'settings' => $tagSettings,
-                                'elements' => [],
-                                'widgetType' => $tagWidgetType,
-                            ]
-                        ],
-                        'isInner' => false,
-                    ];
-                    $id++;
-                }
-            }
-            update_post_meta($this->post_id, '_elementor_data', seowriting_json_encode_unescaped($elementorSettings));
+            include_once __DIR__ . '/html2elementor.php';
+            $html2elementor = new HTML2Elementor($data['html']);
+            update_post_meta($this->post_id, '_elementor_data', str_replace('\"', '\\\"', str_replace('\/', '\\\/', seowriting_json_encode_unescaped($html2elementor->get()))));
         }
 
         if (is_plugin_active(self::PLUGIN_YOAST) || is_plugin_active(self::PLUGIN_YOAST_PRO)) {
