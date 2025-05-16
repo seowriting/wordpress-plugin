@@ -25,6 +25,11 @@ class HTML2Elementor
     private $is_super_page = false;
 
     /**
+     * @var string
+     */
+    private $pref;
+
+    /**
      * @var bool
      */
     private $prepared = false;
@@ -42,6 +47,7 @@ class HTML2Elementor
     {
         $this->html = '<?xml encoding="utf-8" ?><html><body>' . str_replace("\n", " ", $html) . '</body></html>';
         $this->is_super_page = strpos($this->html, 'styled-container') !== false;
+        $this->pref = substr(md5((string)microtime(true)), 0, 6);
     }
 
     /**
@@ -80,11 +86,11 @@ class HTML2Elementor
     }
 
     /**
-     * @return int|string
+     * @return string
      */
-    private function id($as_int = false)
+    private function id()
     {
-        return $as_int ? ++$this->id : (string)++$this->id;
+        return $this->pref . (string)++$this->id;
     }
 
     /**
@@ -207,7 +213,7 @@ class HTML2Elementor
                 $widget_type = 'image';
                 $settings['image'] = [
                     'url' => $this->replace($node->getAttribute('src')),
-                    'id' => $this->id(true),
+                    'id' => $this->id(),
                     'size' => '',
                     'alt' => trim($node->getAttribute('alt'))
                 ];

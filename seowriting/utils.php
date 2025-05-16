@@ -1,5 +1,11 @@
 <?php
 
+$dev = __DIR__ . '/dev.php';
+define('SW_IS_DEV', is_readable($dev));
+if (SW_IS_DEV) {
+    include_once $dev;
+}
+
 function seowriting_add_file_to_zip($dir, $zip, $rootPath = '')
 {
     $files = scandir($dir);
