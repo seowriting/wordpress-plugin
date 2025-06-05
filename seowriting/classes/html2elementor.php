@@ -45,8 +45,11 @@ class HTML2Elementor
      */
     function __construct($html)
     {
+        $this->is_super_page = strpos($html, 'styled-container') !== false;
+        if (!$this->is_super_page) {
+            $html = '<div>'.$html.'</div>';
+        }
         $this->html = '<?xml encoding="utf-8" ?><html><body>' . str_replace("\n", " ", $html) . '</body></html>';
-        $this->is_super_page = strpos($this->html, 'styled-container') !== false;
         $this->pref = substr(md5((string)microtime(true)), 0, 6);
     }
 
@@ -191,6 +194,7 @@ class HTML2Elementor
                 }
             }
 
+            $is_faq_main_entity = $tag === 'section' && strpos($classes, 'schema-section') !== false;
             $sticky_cta = strpos($classes, 'sticky-cta') !== false;
             $rating_stars = strpos($classes, 'rating-stars') !== false;
             $text = trim((string)$node->nodeValue);
@@ -202,12 +206,12 @@ class HTML2Elementor
                 || $tag === 'blockquote'
                 || $tag === 'form'
                 || strpos($classes, 'rating-container') !== false
-                ||  $sticky_cta;
+                || $sticky_cta
+                || $is_faq_main_entity;
             $unset_classes = $tag === 'table' || $sticky_cta || $rating_stars;
             $elements = $stop ? [] : $this->to_payload($node->childNodes, $level + 1);
             $div_with_text = count($elements) === 0 && $tag === 'div' && $text !== '';
             $stop = $stop || $div_with_text || $rating_stars;
-
 
             if ($tag === 'img') {
                 $widget_type = 'image';
@@ -246,6 +250,7 @@ class HTML2Elementor
                 'isInner' => !($level === 0),
                 'elType' => $widget_type === '' ? 'container' : 'widget',
             ];
+
             if ($widget_type != '') {
                 $payload['widgetType'] = $widget_type;
             } else {
@@ -253,9 +258,11 @@ class HTML2Elementor
                     $settings['content_width'] = 'full';
                 }
             }
+
             if ($unset_classes) {
                 unset($settings['css_classes'], $settings['_css_classes']);
             }
+
             $payload['settings'] = $settings;
             $payload['elements'] = $elements;
             $payloads[] = $payload;

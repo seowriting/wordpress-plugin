@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.12.0
+ * Version:           1.12.2
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.12.0';
+        public $version = '1.12.2';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -41,6 +41,7 @@ if (!class_exists('SEOWriting')) {
         const SETTINGS_CSS_HASH_KEY = "seowriting_css_hash";
         const SETTINGS_GENERATOR_NAME = 'seowriting';
         const SETTINGS_GENERATOR_NAME_KEY = 'seowriting_generator';
+        const SETTINGS_GENERATOR_PAGE_TYPE = 'seowriting_page_type';
         const SETTINGS_INIT = 'seowriting_init';
         const SETTINGS_KEY = 'seowriting_settings';
         const SETTINGS_PLUGIN_NAME_KEY = 'seowriting_plugin_name';
@@ -875,7 +876,7 @@ if (!class_exists('SEOWriting')) {
                 ),
                 wp_kses_allowed_html('post')
             );
-            $data['html'] = $content;
+            $data['html'] = trim($content);
             if (isset($data['author_id'])) {
                 $user_id = (int)$data['author_id'];
             }
@@ -968,6 +969,7 @@ if (!class_exists('SEOWriting')) {
             @set_time_limit($maxExecutionTime);
 
             add_post_meta($post_id, self::SETTINGS_GENERATOR_NAME_KEY, self::SETTINGS_GENERATOR_NAME, true);
+            add_post_meta($post_id, self::SETTINGS_GENERATOR_PAGE_TYPE, isset($data['ct'])  ? seowriting_escape($data['ct']) : 'unk', true);
 
             return [
                 'result' => 1,
