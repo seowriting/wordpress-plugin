@@ -1,5 +1,22 @@
 <?php
 
+/**
+ * @return WP_Filesystem_Base
+ */
+function seowriting_get_filesystem()
+{
+    static $filesystem = null;
+
+    if (is_null($filesystem)) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        WP_Filesystem();
+        global $wp_filesystem;
+        $filesystem = $wp_filesystem;
+    }
+
+    return $filesystem;
+}
+
 function seowriting_add_file_to_zip($dir, $zip, $rootPath = '')
 {
     $files = scandir($dir);
@@ -24,7 +41,7 @@ function seowriting_add_file_to_zip($dir, $zip, $rootPath = '')
 function seowriting_delete_dir($dirPath)
 {
     if (!is_dir($dirPath)) {
-        throw new InvalidArgumentException("$dirPath must be a directory");
+        throw new InvalidArgumentException(esc_html($dirPath) . " must be a directory");
     }
     if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
         $dirPath .= '/';
@@ -35,11 +52,12 @@ function seowriting_delete_dir($dirPath)
             if (is_dir($file)) {
                 seowriting_delete_dir($file);
             } else {
-                unlink($file);
+                wp_delete_file($file);
             }
         }
     }
-    rmdir($dirPath);
+    $fs = seowriting_get_filesystem();
+    $fs->rmdir($dirPath);
 }
 
 /**

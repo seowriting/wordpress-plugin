@@ -100,7 +100,7 @@ class SettingsForm
         if (isset($_GET['seved'])) {
             $notice = $this->getMessageBox(false, __('Settings updated successfully', 'seowriting'));
         }
-        return $notice;
+        return esc_html($notice);
     }
 
     public function render_page()
@@ -182,7 +182,8 @@ class SettingsForm
     public function rename_plugin($new_name)
     {
         $file = __DIR__ . '/../seowriting.php';
-        if (!is_readable($file) || !is_writable($file)) {
+        $fs = seowriting_get_filesystem();
+        if (!is_readable($file) || !$fs->is_writable($file)) {
             return false;
         }
         $active_plugins = get_option('active_plugins');
@@ -204,7 +205,7 @@ class SettingsForm
             $result = false;
         } else {
             /** @phpstan-ignore-next-line */
-            $result = rename($current_dir, $new_dir);
+            $result = $fs->move($current_dir, $new_dir);
         }
         return $result;
     }

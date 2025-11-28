@@ -109,7 +109,7 @@ class APIClient
      */
     public function connect($wpUser)
     {
-        $secret = md5(time() . mt_rand());
+        $secret = md5(time() . wp_rand());
 
         $_data = [
             'name' => $wpUser['user_email'],
@@ -256,7 +256,7 @@ class APIClient
                 } else {
                     $this->error = 'file_put_contents(' . $tmp_name . ') ' . $size . ' bytes';
                 }
-                @unlink($tmp_name);
+                @wp_delete_file($tmp_name);
             } else {
                 $this->error = 'unknown_type=' . $content_type;
             }
@@ -270,7 +270,7 @@ class APIClient
     public function deleteImage($file)
     {
         if (isset($file['tmp_name']) && file_exists($file['tmp_name'])) {
-            @unlink($file['tmp_name']);
+            @wp_delete_file($file['tmp_name']);
         }
     }
 }
