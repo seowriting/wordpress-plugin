@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.12.3
+ * Version:           1.12.4
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.12.3';
+        public $version = '1.12.4';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -106,7 +106,6 @@ if (!class_exists('SEOWriting')) {
             add_filter('the_content', [$this, 'onContent'], 20);
             add_action("wp_head", [$this, 'printJSONLD'], 20);
 
-            add_action('transition_post_status', [$this, 'onChangePostStatus'], 10, 3);
             add_action('upgrader_process_complete', [$this, 'onUpdate'], 10, 2);
 
             add_action('requests-requests.before_parse', [$this, 'onAfterRequest'], 10, 6);
@@ -176,41 +175,6 @@ if (!class_exists('SEOWriting')) {
                     seowriting_delete_dir($tmpDir);
                 }
             }
-        }
-
-        /**
-         * @param $new_status string
-         * @param $old_status string
-         * @param $post WP_Post
-         * @return bool
-         */
-        public function onChangePostStatus($new_status, $old_status, $post)
-        {
-            $status = '';
-            if (
-                ($old_status === 'auto-draft' && $new_status === 'publish')
-                || ($old_status === 'pending' && $new_status === 'publish')
-                || ($old_status === 'draft' && $new_status === 'publish')
-                || ($old_status === 'publish' && $new_status === 'publish')
-            ) {
-                $status = 'update';
-            } else if (
-                ($old_status === 'publish' && $new_status === 'pending')
-                || ($old_status === 'publish' && $new_status === 'draft')
-                || ($old_status === 'publish' && $new_status === 'trash')
-            ) {
-                $status = 'delete';
-            }
-            if ($status === '') {
-                return false;
-            }
-            $settings = $this->getSettings();
-            $this->getAPIClient()->changePostStatus($status, [
-                'post_id' => $post->ID,
-                'api_key' => isset($settings['api_key']) ? $settings['api_key'] : 'null',
-            ]);
-
-            return true;
         }
 
         /**

@@ -1,10 +1,10 @@
 === SEOWriting ===
 Contributors: SEOWriting
 Tags: seo writing, AI tool, AI writing, generation text
-Tested up to: 6.8.1
+Tested up to: 7.0
 Requires at least: 4.9
-Requires PHP: 5.6.20
-Stable tag: 1.12.3
+Requires PHP: 7.1
+Stable tag: 1.12.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,14 @@ SEO WRITING’s powerful plugin allows you to seamlessly publish titles, texts, 
 The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin). The Service is provided under the terms of [Terms of Service](https://seowriting.ai/terms-of-service?utm_source=wp_plugin) and [Privacy Policy](https://seowriting.ai/privacy-policy?utm_source=wp_plugin).
 
 == Changelog ==
+
+= 1.12.4 (2025/11/28) =
+
+Feature:
+* Added `6.8.2`, `6.8.3`, `6.9` and `7.0` WP versions support
+* Added `8.5` PHP version support
+* Support for `5.6.20` and `7.0` PHP versions has been removed
+* The `transition_post_status` webhook has been removed
 
 = 1.12.3 (2025/07/26) =
 
