@@ -80,7 +80,9 @@ class SettingsForm
 
     public function showMessages()
     {
-        $res = isset($_GET['m']) ? sanitize_text_field($_GET['m']) : '';
+        $res = isset($_GET['m']) && is_string($_GET['m'])
+            ? sanitize_text_field(wp_unslash($_GET['m']))
+            : '';
         $message = '';
 
         if ($res === 'success') {
@@ -88,7 +90,11 @@ class SettingsForm
         } elseif ($res === 'failure') {
             $message = $this->getMessageBox(true,
                 'Authorisation Error',
-                (isset($_GET['t']) ? sanitize_text_field($_GET['t']) : '')
+                (
+                    isset($_GET['t']) && is_string($_GET['t'])
+                        ? sanitize_text_field(wp_unslash($_GET['t']))
+                        : ''
+                )
             );
         }
         return $message;
@@ -127,9 +133,13 @@ class SettingsForm
 
     public function settings_save()
     {
-        $nonce = sanitize_text_field($_POST['SWR_NONCE']);
-        $action = sanitize_text_field($_POST['action']);
-        if (!isset($nonce) || !wp_verify_nonce($nonce, $action)) {
+        $nonce = isset($_POST['SWR_NONCE']) && is_string($_POST['SWR_NONCE'])
+            ? sanitize_text_field(wp_unslash($_POST['SWR_NONCE']))
+            : '';
+        $action = isset($_POST['action']) && is_string($_POST['action'])
+            ? sanitize_text_field(wp_unslash($_POST['action']))
+            : '';
+        if ($nonce === '' || $action === '' || !wp_verify_nonce($nonce, $action)) {
             print 'Sorry, your nonce did not verify.';
             exit;
         }
@@ -141,8 +151,8 @@ class SettingsForm
         $keys = ['sw_shema_type', 'seowriting_split_to_elementor', 'seowriting_plugin_name'];
         $fields_to_update = [];
         foreach ($keys as $key) {
-            if (array_key_exists($key, $_POST)) {
-                $value = trim($_POST[$key]);
+            if (array_key_exists($key, $_POST) && is_string($_POST[$key])) {
+                $value = trim(wp_unslash($_POST[$key]));
                 if ($key === 'seowriting_plugin_name') {
                     /** @phpstan-ignore-next-line */
                     $value = str_replace(' ', '_', preg_replace('/[^a-zA-Z0-9\s]/', '', mb_strtolower($value)));
@@ -189,14 +199,16 @@ class SettingsForm
         $active_plugins = get_option('active_plugins');
         if (!empty($active_plugins) && is_array($active_plugins) && isset($active_plugins[0])) {
             foreach ($active_plugins as $idx => $active_plugin) {
-                if (strpos($active_plugin, '/seowriting.php') !== false) {
-                    $active_plugin = explode('/', $active_plugin);
-                    $active_plugin[0] = $new_name;
-                    $active_plugin = implode('/', $active_plugin);
-                    $active_plugins[$idx] = $active_plugin;
-                    update_option('active_plugins', $active_plugins);
-                    break;
+                if (!is_string($active_plugin) || strpos($active_plugin, '/seowriting.php') === false) {
+                    continue;
                 }
+
+                $active_plugin = explode('/', $active_plugin);
+                $active_plugin[0] = $new_name;
+                $active_plugin = implode('/', $active_plugin);
+                $active_plugins[$idx] = $active_plugin;
+                update_option('active_plugins', $active_plugins);
+                break;
             }
         }
         $current_dir = realpath(__DIR__ . '/../');
@@ -219,8 +231,12 @@ class SettingsForm
 
     public function conectionAjax($action)
     {
-        $nonce = sanitize_text_field($_POST['nonce']);
-        $action = sanitize_text_field($_POST['aj']);
+        $nonce = isset($_POST['nonce']) && is_string($_POST['nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['nonce']))
+            : '';
+        $action = isset($_POST['aj']) && is_string($_POST['aj'])
+            ? sanitize_text_field(wp_unslash($_POST['aj']))
+            : '';
         if (!isset($nonce) || !wp_verify_nonce($nonce, 'ajax-nonce') || empty($action)) {
             exit();
         }

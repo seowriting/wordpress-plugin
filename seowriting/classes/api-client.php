@@ -105,7 +105,7 @@ class APIClient
 
     /**
      * @param \WP_User $wpUser
-     * @return array<string, int|string>
+     * @return array<string, mixed>
      */
     public function connect($wpUser)
     {

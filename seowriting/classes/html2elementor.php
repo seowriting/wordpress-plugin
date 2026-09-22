@@ -226,7 +226,6 @@ class HTML2Elementor
                 $attrs = [];
                 if (!is_null($node->attributes)) {
                     foreach ($node->attributes as $attr) {
-                        // @phpstan-ignore-next-line
                         $attrs[] = $attr->name . '="' . $attr->value . '"';
                     }
                 }

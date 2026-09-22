@@ -1,6 +1,5 @@
 parameters:
     level: 9
-    checkGenericClassInNonGenericObjectType: false
     treatPhpDocTypesAsCertain: false
     scanFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
