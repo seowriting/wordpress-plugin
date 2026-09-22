@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.12.5
+ * Version:           1.12.6
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.12.5';
+        public $version = '1.12.6';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -46,6 +46,7 @@ if (!class_exists('SEOWriting')) {
         const SETTINGS_KEY = 'seowriting_settings';
         const SETTINGS_PLUGIN_NAME_KEY = 'seowriting_plugin_name';
         const SETTINGS_PLUGIN_VERSION_KEY = 'seowriting_plugin_version';
+        const SETTINGS_ACTIVATION_REDIRECT = 'seowriting_activation_redirect';
         const REST_VERSION = 1;
         const MB_ENCODING = 'UTF-8';
 
@@ -90,6 +91,7 @@ if (!class_exists('SEOWriting')) {
             if (is_admin()) {
                 $this->adminPages();
                 add_filter('plugin_action_links_' . plugin_basename($this->plugin_path . self::SEOWRITING_PHP), [$this, 'adminSettingsLink']);
+                add_action('admin_init', [$this, 'redirectAfterActivation']);
 
                 register_deactivation_hook(__FILE__, [$this, 'deactivate']);
                 register_activation_hook(__FILE__, [$this, 'activate']);
@@ -125,10 +127,24 @@ if (!class_exists('SEOWriting')) {
             }
         }
 
-        public function activate()
+        public function activate($redirect = true)
         {
             update_option(self::SETTINGS_PLUGIN_VERSION_KEY, $this->version);
             $this->setCSS($this->readCSS());
+            if ($redirect) {
+                add_option(self::SETTINGS_ACTIVATION_REDIRECT, true, '', 'no');
+            }
+        }
+
+        public function redirectAfterActivation()
+        {
+            if (is_network_admin() || !get_option(self::SETTINGS_ACTIVATION_REDIRECT)) {
+                return;
+            }
+
+            delete_option(self::SETTINGS_ACTIVATION_REDIRECT);
+            wp_safe_redirect($this->getPageUrl('seowriting-setting'));
+            exit;
         }
 
         /**
@@ -212,7 +228,7 @@ if (!class_exists('SEOWriting')) {
                 return;
             }
             delete_option(self::SETTINGS_INIT);
-            $this->activate();
+            $this->activate(false);
             $this->getAPIClient()->update($this->version);
         }
 
@@ -1144,6 +1160,7 @@ if (!class_exists('SEOWriting')) {
 
         public function deactivate()
         {
+            delete_option(self::SETTINGS_ACTIVATION_REDIRECT);
             if ($this->isConnected()) {
                 $this->disconnect();
             }
