@@ -1,26 +1,129 @@
-=== SEOWriting ===
+=== SEO WRITING – AI Writer for SEO & AI Search ===
 Contributors: SEOWriting
 Tags: seo writing, AI tool, AI writing, generation text
-Tested up to: 6.9
+Tested up to: 7.1.1
 Requires at least: 4.9
 Requires PHP: 7.1
-Stable tag: 1.12.8
+Stable tag: 1.12.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-AI writing assistant for creating SEO-optimized content with auto-publishing & scheduling posts on WordPress websites.
+Create articles for SEO and AI Search, add internal links with semantic search, and auto-publish or schedule posts on WordPress.
 
 == Description ==
 
-[SEO WRITING](https://seowriting.ai/?utm_source=wp_plugin "SEO WRITING") - an all-in-one solution for creating SEO-optimized content. Featuring Super Page, our super-agent that scans SERP top-ranking competitors to extract winning strategies and create complete, optimized pages with perfect structure, relevant images, optimal word count, and strategic CTAs in minutes.
+**SEO WRITING helps you create articles for SEO and AI Search and publish them to WordPress.** Prepare content with AI answers in mind, including ChatGPT, Google AI Overviews, Google AI Mode, Gemini, and Perplexity. Build articles around clear answers, supporting sources, and relevant internal links.
 
-[youtube https://www.youtube.com/watch?v=LyyZxMWGX8o]
+Create content in the SEO WRITING web app at [seowriting.ai](https://seowriting.ai/?utm_source=wp_plugin&utm_medium=directory&utm_campaign=listing_refresh_2026). This plugin connects your website to the service and delivers articles, images, and SEO metadata as drafts, scheduled posts, or published articles.
 
-SEO WRITING’s powerful plugin allows you to seamlessly publish titles, texts, images, meta titles, and meta descriptions on your WordPress website. The installation process is quick and easy, and you can find a step-by-step guide [here](https://docs.seowriting.ai/article/wordpress-integration?utm_source=wp_plugin "Plugin installation guide").
+**An SEO WRITING account is required.** The plugin is free to install. Content generation and semantic search run in the web app. Free and paid plans have different generation limits and features.
 
-The plugin uses the REST-API provided by [https://seowriting.ai/](https://seowriting.ai/?utm_source=wp_plugin). The Service is provided under the terms of [Terms of Service](https://seowriting.ai/terms-of-service?utm_source=wp_plugin) and [Privacy Policy](https://seowriting.ai/privacy-policy?utm_source=wp_plugin).
+[Get started with SEO WRITING](https://seowriting.ai/?utm_source=wp_plugin&utm_medium=directory&utm_campaign=listing_refresh_2026) | [WordPress setup guide](https://docs.seowriting.ai/article/wordpress-integration)
+
+= Articles for SEO and AI Search =
+
+Create blog posts, how-to guides, product reviews, and comparisons from a keyword or brief. Set the outline, language, tone, and Brand Voice; include AI-generated images.
+
+Use clear sections and FAQ answers to address readers' questions. Add external sources beside the claims they support and connect related pages through internal links. These features help you prepare useful, well-supported content for traditional search and AI search experiences.
+
+= Internal linking with our own semantic search =
+
+SEO WRITING uses a semantic search model built and hosted by our team to index your site's articles and find relevant internal links by meaning, beyond shared keywords.
+
+For example, a post about villa cleaning can connect to your article on marble floor care because the topics belong together. Matching considers the content's meaning rather than relying on the word "cleaning" alone.
+
+The model is designed for fast, accurate matching of related pages during generation. Keep "Insert only if relevant" enabled to skip pages that have no natural place in the article.
+
+No additional API keys, third-party search subscriptions, or per-link charges are needed for semantic internal linking.
+
+= Bulk generation and auto blogging =
+
+Prepare up to 100 article-generation tasks in a batch with Bulk Article Generation. Save articles as drafts for review, publish completed articles, or schedule them for later. Bloggers, publishers, and agencies can deliver a planned queue of content to connected WordPress sites.
+
+[Learn about Bulk Article Generation](https://docs.seowriting.ai/article/bulk-generation)
+
+= WordPress publishing and SEO integrations =
+
+* Choose Draft, Publish, or Schedule.
+* Import article images and set a featured image when selected.
+* Select authors and categories, add tags, and configure the post slug.
+* Optionally use the meta description as the post excerpt.
+* Publish posts, pages, and supported public custom post types.
+* Transfer SEO titles and meta descriptions to supported fields in Yoast SEO, Rank Math, All in One SEO (AIOSEO), SEOPress, The SEO Framework, and Squirrly SEO.
+* Enable Elementor content conversion in the plugin settings when needed.
+
+Supported metadata fields vary by integration. SEO WRITING works alongside your installed SEO plugin.
+
+= Super Page for structured pages =
+
+Create service pages, product comparisons, and other structured pages with Super Page. Use search-result analysis to guide the structure, images, and calls to action, then publish to your connected WordPress site.
+
+[Explore Super Page](https://docs.seowriting.ai/article/super-page)
+
+= Product walkthrough =
+
+https://www.youtube.com/watch?v=LyyZxMWGX8o
+
+= Documentation and support =
+
+[Browse the documentation](https://docs.seowriting.ai/) or visit the [WordPress support forum](https://wordpress.org/support/plugin/seowriting/). For account help, use the support options in the SEO WRITING web app.
+
+== Installation ==
+
+1. Install and activate the plugin, then open its settings.
+2. Sign in to your SEO WRITING account and click Connect in the plugin settings. Complete the connection flow.
+3. Check that your website appears under Integrations in the web app.
+4. Create an article or bulk generation task, select your connected site, and choose Draft, Publish, or Schedule.
+
+See the [WordPress integration guide](https://docs.seowriting.ai/article/wordpress-integration) for illustrated instructions.
+
+== Frequently Asked Questions ==
+
+= Is the SEO WRITING plugin free? =
+
+Yes. The WordPress connector is free to install. You need an SEO WRITING account for generation and publishing through the service. Free and paid plans have different limits and features; see [SEO WRITING plans](https://seowriting.ai/) for details.
+
+= Where do article generation and semantic search run? =
+
+They run in the SEO WRITING web app. The plugin connects your WordPress site, provides site content to the service for features such as internal linking, and receives articles for publication. You can edit imported posts in WordPress.
+
+= Can I create content for ChatGPT and Google AI Overviews? =
+
+Yes. SEO WRITING helps prepare content with clear answers, supporting sources, and relevant links for SEO and AI Search, including ChatGPT, Google AI Overviews, AI Mode, Gemini, and Perplexity. Search engines and AI services choose which content to surface; rankings and citations are not guaranteed.
+
+= How does semantic internal linking work? =
+
+SEO WRITING's own model indexes your site's articles and matches related content by meaning. It runs during generation to find relevant destinations quickly. With "Insert only if relevant" enabled, pages without a natural fit are skipped.
+
+= Do I need a separate subscription or API key for internal linking? =
+
+No additional search subscription or API key is required, and semantic internal linking has no per-link charges. Your SEO WRITING plan's generation limits and feature availability still apply.
+
+= Can I review articles before publishing or schedule them? =
+
+Yes. Choose Draft to review articles in WordPress, Publish for immediate publication, or Schedule for a later date and time. These options are available in the WordPress posting settings for 1-Click Blog Post and Bulk Article Generation.
+
+= Will images and SEO metadata be transferred? =
+
+Yes. The plugin imports article images and can set a featured image. Supplied SEO titles and meta descriptions are transferred to supported SEO integrations; available fields vary by integration.
+
+= How do I disconnect my WordPress site? =
+
+Use Disconnect in the plugin settings, or disconnect the website from Integrations in your SEO WRITING account.
+
+== External services ==
+
+This plugin connects to the SEO WRITING service at https://seowriting.ai/api/v1/ for account connection and the publishing integration.
+
+Article generation and semantic indexing for internal linking take place in the SEO WRITING service. Site article content is processed there to find related pages. Please review the service's [Terms of Service](https://seowriting.ai/terms-of-service) and [Privacy Policy](https://seowriting.ai/privacy-policy).
 
 == Changelog ==
+
+= 1.12.9 (2026/09/22) =
+
+Feature:
+
+* Bump stable tag to 1.12.9
 
 = 1.12.8 (2026/09/22) =
 
