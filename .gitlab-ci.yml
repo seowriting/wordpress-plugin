@@ -1,0 +1,73 @@
+stages:
+  - check
+  - build
+
+check-phpstan:
+  stage: check
+  retry: 2
+  image: $CHECKER_IMAGE
+  only:
+    - beta
+  script:
+    - php8.4 vendor/bin/phpstan --memory-limit=3072M
+
+create_archive:
+  stage: build
+  image: alpine:3.22
+  needs:
+    - check-phpstan
+  only:
+    - beta
+  before_script:
+    - apk add --no-cache zip curl
+  script:
+    - |
+      set -eu
+      for V in AUTH_USER AUTH_PASSWORD WP_STORAGE_URL WP_STORAGE_FNAME WP_STORAGE_ID BETA_API_URL; do
+        if [ -z "$(printenv "$V" || true)" ]; then
+          echo "Required CI/CD variable $V is not set"
+          exit 1
+        fi
+      done
+      if ! printf '%s' "$BETA_API_URL" | grep -Eq '^https://[A-Za-z0-9.-]+(:[0-9]+)?/[A-Za-z0-9/._-]*$'; then
+        echo "BETA_API_URL has invalid format"
+        exit 1
+      fi
+      NOW=$(date +"%y%m%d%H%M%S")
+      ZIP_NAME="seowriting-beta-$NOW.zip"
+      API_CLIENT=/tmp/build/seowriting/classes/api-client.php
+      echo "Creating $ZIP_NAME"
+      rm -rf /tmp/build && mkdir -p /tmp/build
+      cp -r ./seowriting /tmp/build/
+      sed -i "s|'https://seowriting.ai/api/v1/'|'$BETA_API_URL'|g" "$API_CLIENT"
+      if ! grep -qF "private \$base_url = '$BETA_API_URL';" "$API_CLIENT"; then
+        echo "base_url replacement failed"
+        exit 1
+      fi
+      cd /tmp/build
+      zip -rq "$ZIP_NAME" seowriting
+      ls -al "$ZIP_NAME"
+      STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 300 -XPOST -u "$AUTH_USER:$AUTH_PASSWORD" -F "fname=$WP_STORAGE_FNAME" -F "id=$WP_STORAGE_ID" -F "version=beta-$NOW" -F "file=@$ZIP_NAME" "$WP_STORAGE_URL") || {
+        echo "Upload failed: curl exit $?, status ${STATUS:-none}"
+        exit 1
+      }
+      echo "STATUS = $STATUS"
+      if [ "$STATUS" -ne 200 ]; then
+        echo "Unsupported status: $STATUS"
+        exit 1
+      fi
+      if [ -z "${ALERT_BOT_URL:-}" ] || [ -z "${ALERT_LEVEL:-}" ] || [ -z "${ALERT_FROM:-}" ]; then
+        echo "ALERT_BOT_URL/ALERT_LEVEL/ALERT_FROM is not set, skipping notification"
+        exit 0
+      fi
+      if printf '%s\n%s\n' "$ALERT_LEVEL" "$ALERT_FROM" | grep -Evq '^[A-Za-z0-9:_.-]+$'; then
+        echo "ALERT_LEVEL/ALERT_FROM has invalid format, skipping notification"
+        exit 0
+      fi
+      ALERT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 \
+        -XPOST \
+        -u "${ALERT_BOT_USER:-}:${ALERT_BOT_PASSWORD:-}" \
+        -H "content-type: application/json" \
+        -d "{\"level\": \"$ALERT_LEVEL\", \"from\": \"$ALERT_FROM\", \"message\": \"New SEOWriting beta plugin deployed: $ZIP_NAME\" }" \
+        "$ALERT_BOT_URL") || true
+      echo "ALERT_STATUS = ${ALERT_STATUS:-none}"
