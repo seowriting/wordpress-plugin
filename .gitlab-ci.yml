@@ -29,10 +29,12 @@ create_archive:
           exit 1
         fi
       done
-      if ! printf '%s' "$BETA_API_URL" | grep -Eq '^https://[A-Za-z0-9.-]+(:[0-9]+)?/[A-Za-z0-9/._-]*$'; then
-        echo "BETA_API_URL has invalid format"
-        exit 1
-      fi
+      for V in BETA_API_URL WP_STORAGE_URL; do
+        if ! printenv "$V" | grep -Eq '^https?://[A-Za-z0-9.-]+(:[0-9]+)?/[A-Za-z0-9/._-]*$'; then
+          echo "$V has invalid format"
+          exit 1
+        fi
+      done
       NOW=$(date +"%y%m%d%H%M%S")
       ZIP_NAME="seowriting-beta-$NOW.zip"
       API_CLIENT=/tmp/build/seowriting/classes/api-client.php
@@ -64,10 +66,18 @@ create_archive:
         echo "ALERT_LEVEL/ALERT_FROM has invalid format, skipping notification"
         exit 0
       fi
+      PLUGIN_LINK="$ZIP_NAME"
+      if [ -n "${WP_DOWNLOAD_URL:-}" ]; then
+        if printf '%s' "$WP_DOWNLOAD_URL" | grep -Eq '^https?://[A-Za-z0-9.-]+(:[0-9]+)?/[A-Za-z0-9/._-]*$'; then
+          PLUGIN_LINK="${WP_DOWNLOAD_URL%/}/$ZIP_NAME"
+        else
+          echo "WP_DOWNLOAD_URL has invalid format, sending archive name only"
+        fi
+      fi
       ALERT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 \
         -XPOST \
         -u "${ALERT_BOT_USER:-}:${ALERT_BOT_PASSWORD:-}" \
         -H "content-type: application/json" \
-        -d "{\"level\": \"$ALERT_LEVEL\", \"from\": \"$ALERT_FROM\", \"message\": \"New SEOWriting beta plugin deployed: $ZIP_NAME\" }" \
+        -d "{\"level\": \"$ALERT_LEVEL\", \"from\": \"$ALERT_FROM\", \"message\": \"New SEOWriting beta plugin deployed: $PLUGIN_LINK\" }" \
         "$ALERT_BOT_URL") || true
       echo "ALERT_STATUS = ${ALERT_STATUS:-none}"
