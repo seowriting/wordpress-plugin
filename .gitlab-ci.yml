@@ -9,7 +9,7 @@ check-phpstan:
   only:
     - beta
   script:
-    - php8.4 vendor/bin/phpstan --memory-limit=3072M
+    - php8.3 vendor/bin/phpstan --memory-limit=3072M
 
 create_archive:
   stage: build

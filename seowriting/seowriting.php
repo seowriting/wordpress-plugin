@@ -714,7 +714,9 @@ if (!class_exists('SEOWriting')) {
 
             if (!empty($images)) {
                 foreach ($images as $attachment) {
-                    wp_delete_attachment($attachment->ID, true);
+                    if ($attachment instanceof \WP_Post) {
+                        wp_delete_attachment($attachment->ID, true);
+                    }
                 }
             }
         }
