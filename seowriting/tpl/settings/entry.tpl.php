@@ -2,7 +2,7 @@
 namespace SEOWriting;
 defined('WPINC') || exit;
 
-$menu_list = array(
+$seowritingMenuList = array(
     'general' => __('General', 'seowriting'),
     'settings' => __('Settings', 'seowriting'),
 );
@@ -11,7 +11,7 @@ $menu_list = array(
 <div class="wrap">
     <h1 class="seowriting-h1">
         <?php
-        echo esc_html__('SEOWriting');
+        echo esc_html__('SEOWriting', 'seowriting');
         ?>
     </h1>
     <span class="seowriting-desc">
@@ -23,8 +23,10 @@ $menu_list = array(
 <div class="seowriting-wrap">
     <h2 class="seowriting-header nav-tab-wrapper">
         <?php
-        foreach ($menu_list as $tab => $val) {
-            echo "<a class='seowriting-tab nav-tab' href='#$tab' data-seowriting-tab='$tab'>$val</a>";
+        foreach ($seowritingMenuList as $seowritingTab => $seowritingVal) {
+            $seowritingTab = esc_html($seowritingTab);
+            $seowritingVal = esc_html($seowritingVal);
+            echo "<a class='seowriting-tab nav-tab' href='#$seowritingTab' data-seowriting-tab='$seowritingTab'>$seowritingVal</a>";
         }
         ?>
     </h2>
@@ -33,9 +35,10 @@ $menu_list = array(
         <?php
 
         // include all tpl for faster UE
-        foreach ($menu_list as $tab => $val) {
-            echo "<div data-seowriting-layout='$tab'>";
-            require $this->plugin->plugin_path . "tpl/settings/$tab.tpl.php";
+        foreach ($seowritingMenuList as $seowritingTab => $seowritingVal) {
+            $seowritingTab = esc_html($seowritingTab);
+            echo "<div data-seowriting-layout='$seowritingTab'>";
+            require $this->plugin->plugin_path . "tpl/settings/$seowritingTab.tpl.php";
             echo "</div>";
         }
 

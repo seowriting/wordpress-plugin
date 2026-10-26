@@ -7,7 +7,7 @@ function check_error() {
   fi
 }
 
-./vendor/bin/phpstan
+${PHP_BIN:-php} ./vendor/bin/phpstan
 check_error
 
 TAG=$(git describe --tags `git rev-list --tags --max-count=1`)

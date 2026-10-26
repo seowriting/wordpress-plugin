@@ -13,7 +13,6 @@ class APIClient
      */
     private $plugin;
     private $base_url = 'https://seowriting.ai/api/v1/';
-    private $site_url;
     private $ssl_verify = false;
     private $http_timeout = 120;
     /**
@@ -21,7 +20,6 @@ class APIClient
      */
     public $error = '';
 
-    const MAX_IMAGE_SIZE_KB = 1024;
     const MAX_FILENAME_LENGTH = 100;
 
     /**
@@ -30,7 +28,6 @@ class APIClient
     public function __construct($plugin)
     {
         $this->plugin = $plugin;
-        $this->site_url = substr($this->base_url, 0, (int)strpos($this->base_url, '/api/v1/'));
     }
 
     private function getSign($data, $secret)
@@ -99,7 +96,7 @@ class APIClient
     {
         $settings = $this->plugin->getSettings();
         $this->request('update', [
-            'api_key' => $settings['api_key'],
+            'api_key' => isset($settings['api_key']) ? $settings['api_key'] : 'null',
             'new_version' => $newVersion,
         ]);
 
@@ -108,11 +105,11 @@ class APIClient
 
     /**
      * @param \WP_User $wpUser
-     * @return array<string, int|string>
+     * @return array<string, mixed>
      */
     public function connect($wpUser)
     {
-        $secret = md5(time() . mt_rand());
+        $secret = md5(time() . wp_rand());
 
         $_data = [
             'name' => $wpUser['user_email'],
@@ -199,22 +196,9 @@ class APIClient
         ];
     }
 
-    public function checkImageUrl($url)
-    {
-        if (strpos($url, $this->site_url) === 0) {
-            return preg_match('#^/docs/[0-9]+/[0-9a-z]+/[0-9]+/[0-9a-z]+\.(jpg|gif|png|webp)$#', substr($url, strlen($this->site_url)));
-        }
-        return false;
-    }
-
     public function loadImage($url, $filename = '')
     {
-        $settings = $this->plugin->getSettings();
-
         $args = [
-            'headers' => [
-                'API-Auth' => $settings['api_key']
-            ],
             'timeout' => $this->http_timeout,
             'sslverify' => $this->ssl_verify,
         ];
@@ -226,6 +210,9 @@ class APIClient
             return false;
         } elseif (wp_remote_retrieve_response_code($response) === 200) {
             $content_type = wp_remote_retrieve_header($response, 'content-type');
+            if (is_array($content_type)) {
+                $content_type = $content_type[0];
+            }
             $size = wp_remote_retrieve_header($response, 'content-length');
             if (is_array($size)) {
                 $size = $size[0];
@@ -233,37 +220,34 @@ class APIClient
             $size = (int)$size;
             $mimes = get_allowed_mime_types();
 
-            if (($size > 0) && ($size <= (self::MAX_IMAGE_SIZE_KB * 1024)) && in_array($content_type, $mimes)) {
+            if ($size > 0 && in_array($content_type, $mimes)) {
                 $tmp_name = wp_tempnam();
                 if (@file_put_contents($tmp_name, wp_remote_retrieve_body($response))) {
                     $image_size = @getimagesize($tmp_name);
 
                     if ($image_size && ($image_size['mime'] === $content_type)) {
-                        $name = basename($url);
-                        if (strlen($filename) > 0) {
-                            $filename = trim($filename, " \n\r\t.?!;:/\\#");
+                        $filename = trim($filename, " \n\r\t.?!;:/\\#");
+                        if (strlen($filename) === 0) {
+                            $filename = "image";
+                        }
+                        $ext = "." . explode("/", $content_type)[1];
+                        $max_length = self::MAX_FILENAME_LENGTH - strlen($ext);
 
-                            if (strlen($filename) > 0) {
-                                $ext = substr($name, (int)strrpos($name, '.'));
-                                $max_length = self::MAX_FILENAME_LENGTH - strlen($ext);
+                        if (mb_strlen($filename, \SEOWriting::MB_ENCODING) > $max_length) {
+                            $_name = mb_substr($filename, 0, $max_length, \SEOWriting::MB_ENCODING);
 
-                                if (mb_strlen($filename, \SEOWriting::MB_ENCODING) > $max_length) {
-                                    $_name = mb_substr($filename, 0, $max_length, \SEOWriting::MB_ENCODING);
-
-                                    if (preg_match('/^\s/us', mb_substr($filename, $max_length, 1, \SEOWriting::MB_ENCODING))) {
-                                        $filename = trim($_name);
-                                    } else {
-                                        $filename = preg_replace('/^(.+)\s+\S+$/us', '\\1', $_name);
-                                    }
-                                }
-
-                                $name = $filename . $ext;
+                            if (preg_match('/^\s/us', mb_substr($filename, $max_length, 1, \SEOWriting::MB_ENCODING))) {
+                                $filename = trim($_name);
+                            } else {
+                                $filename = preg_replace('/^(.+)\s+\S+$/us', '\\1', $_name);
                             }
                         }
 
+                        $name = $filename . $ext;
+
                         return [
                             'name' => sanitize_file_name($name),
-                            'type' => $image_size['mime'],
+                            'type' => $content_type,
                             'tmp_name' => $tmp_name,
                             'error' => UPLOAD_ERR_OK,
                             'size' => $size
@@ -272,7 +256,9 @@ class APIClient
                 } else {
                     $this->error = 'file_put_contents(' . $tmp_name . ') ' . $size . ' bytes';
                 }
-                @unlink($tmp_name);
+                @wp_delete_file($tmp_name);
+            } else {
+                $this->error = 'unknown_type=' . $content_type;
             }
         } else {
             $this->error = 'response_code=' . wp_remote_retrieve_response_code($response);
@@ -284,7 +270,7 @@ class APIClient
     public function deleteImage($file)
     {
         if (isset($file['tmp_name']) && file_exists($file['tmp_name'])) {
-            @unlink($file['tmp_name']);
+            @wp_delete_file($file['tmp_name']);
         }
     }
 }
