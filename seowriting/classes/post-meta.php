@@ -152,4 +152,73 @@ class PostMeta
         }
 
     }
+
+    /**
+     * SEO title / description of an existing post (webhook action update_post) for the active SEO plugins: only the given values,
+     * null - keep, '' - remove. Focus keywords, Open Graph fields and Elementor data are not touched (set() rewrites all of them).
+     * All in One SEO keeps its values in its own table: only the title / description columns of an existing row are changed there
+     * (Models\Post::savePost() would reset the other settings of the post - canonical url, robots - to their defaults).
+     *
+     * @param string|null $title
+     * @param string|null $description
+     * @return list<string> the SEO plugins that got the values
+     */
+    public function setSeo($title, $description)
+    {
+        $plugins = [
+            'yoast' => [[self::PLUGIN_YOAST, self::PLUGIN_YOAST_PRO], '_yoast_wpseo_title', '_yoast_wpseo_metadesc'],
+            'rank_math' => [[self::PLUGIN_RANK_MATH], 'rank_math_title', 'rank_math_description'],
+            'seopress' => [[self::PLUGIN_SEOPRESS], '_seopress_titles_title', '_seopress_titles_desc'],
+            'seo_framework' => [[self::PLUGIN_SEO_FRAMEWORK], '_genesis_title', '_genesis_description'],
+            'squirrly' => [[self::PLUGIN_SQUIRRLY_SEO], '_sq_title', '_sq_description'],
+            'aioseo' => [[self::PLUGIN_ALL_IN_ONE, self::PLUGIN_ALL_IN_ONE_PRO], '_aioseo_title', '_aioseo_description'],
+        ];
+
+        $updated = [];
+        foreach ($plugins as $name => $plugin) {
+            $active = false;
+            foreach ($plugin[0] as $file) {
+                if (is_plugin_active($file)) {
+                    $active = true;
+                }
+            }
+            if (!$active) {
+                continue;
+            }
+
+            if (!is_null($title)) {
+                $this->setValue($plugin[1], $title);
+            }
+            if (!is_null($description)) {
+                $this->setValue($plugin[2], $description);
+            }
+            if ($name === 'aioseo') {
+                $this->setAioseoRow($title, $description);
+            }
+            $updated[] = $name;
+        }
+        return $updated;
+    }
+
+    /**
+     * @param string|null $title
+     * @param string|null $description
+     */
+    private function setAioseoRow($title, $description)
+    {
+        global $wpdb;
+        $table = $wpdb->prefix . 'aioseo_posts';
+        $fields = [];
+        if (!is_null($title)) {
+            $title = wp_strip_all_tags($title, true);
+            $fields['title'] = (strlen($title) > 0) ? $title : null;
+        }
+        if (!is_null($description)) {
+            $description = wp_strip_all_tags($description, true);
+            $fields['description'] = (strlen($description) > 0) ? $description : null;
+        }
+        if ((count($fields) > 0) && ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table)) {
+            $wpdb->update($table, $fields, ['post_id' => (int)$this->post_id]);
+        }
+    }
 }

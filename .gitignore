@@ -2,5 +2,6 @@
 *.zip
 tmp/
 flush.sh
-.env
 Makefile
+.env
+notes.txt

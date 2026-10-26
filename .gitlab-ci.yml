@@ -1,0 +1,155 @@
+stages:
+  - check
+  - build
+  - release
+
+check-phpstan:
+  stage: check
+  retry: 2
+  image: $CHECKER_IMAGE
+  only:
+    - beta
+  script:
+    - php8.3 vendor/bin/phpstan --memory-limit=3072M
+
+create_archive:
+  stage: build
+  image: alpine:3.22
+  needs:
+    - check-phpstan
+  only:
+    - beta
+  before_script:
+    - apk add --no-cache zip curl
+  script:
+    - |
+      set -eu
+      for V in AUTH_USER AUTH_PASSWORD WP_STORAGE_URL WP_STORAGE_FNAME WP_STORAGE_ID BETA_API_URL; do
+        if [ -z "$(printenv "$V" || true)" ]; then
+          echo "Required CI/CD variable $V is not set"
+          exit 1
+        fi
+      done
+      for V in BETA_API_URL WP_STORAGE_URL; do
+        if ! printenv "$V" | grep -Eq '^https?://[A-Za-z0-9.-]+(:[0-9]+)?/[A-Za-z0-9/._-]*$'; then
+          echo "$V has invalid format"
+          exit 1
+        fi
+      done
+      NOW=$(date +"%y%m%d%H%M%S")
+      ZIP_NAME="seowriting-beta-$NOW.zip"
+      API_CLIENT=/tmp/build/seowriting/classes/api-client.php
+      echo "Creating $ZIP_NAME"
+      rm -rf /tmp/build && mkdir -p /tmp/build
+      cp -r ./seowriting /tmp/build/
+      sed -i "s|'https://seowriting.ai/api/v1/'|'$BETA_API_URL'|g" "$API_CLIENT"
+      if ! grep -qF "private \$base_url = '$BETA_API_URL';" "$API_CLIENT"; then
+        echo "base_url replacement failed"
+        exit 1
+      fi
+      cd /tmp/build
+      zip -rq "$ZIP_NAME" seowriting
+      ls -al "$ZIP_NAME"
+      STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 300 -XPOST -u "$AUTH_USER:$AUTH_PASSWORD" -F "fname=$WP_STORAGE_FNAME" -F "id=$WP_STORAGE_ID" -F "version=beta-$NOW" -F "file=@$ZIP_NAME" "$WP_STORAGE_URL") || {
+        echo "Upload failed: curl exit $?, status ${STATUS:-none}"
+        exit 1
+      }
+      echo "STATUS = $STATUS"
+      if [ "$STATUS" -ne 200 ]; then
+        echo "Unsupported status: $STATUS"
+        exit 1
+      fi
+      if [ -z "${ALERT_BOT_URL:-}" ] || [ -z "${ALERT_LEVEL:-}" ] || [ -z "${ALERT_FROM:-}" ]; then
+        echo "ALERT_BOT_URL/ALERT_LEVEL/ALERT_FROM is not set, skipping notification"
+        exit 0
+      fi
+      if printf '%s\n%s\n' "$ALERT_LEVEL" "$ALERT_FROM" | grep -Evq '^[A-Za-z0-9:_.-]+$'; then
+        echo "ALERT_LEVEL/ALERT_FROM has invalid format, skipping notification"
+        exit 0
+      fi
+      PLUGIN_LINK="$ZIP_NAME"
+      if [ -n "${WP_DOWNLOAD_URL:-}" ]; then
+        if printf '%s' "$WP_DOWNLOAD_URL" | grep -Eq '^https?://[A-Za-z0-9.-]+(:[0-9]+)?/[A-Za-z0-9/._-]*$'; then
+          PLUGIN_LINK="${WP_DOWNLOAD_URL%/}/$ZIP_NAME"
+        else
+          echo "WP_DOWNLOAD_URL has invalid format, sending archive name only"
+        fi
+      fi
+      ALERT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 --max-time 30 \
+        -XPOST \
+        -u "${ALERT_BOT_USER:-}:${ALERT_BOT_PASSWORD:-}" \
+        -H "content-type: application/json" \
+        -d "{\"level\": \"$ALERT_LEVEL\", \"from\": \"$ALERT_FROM\", \"message\": \"New SEOWriting beta plugin deployed: $PLUGIN_LINK\" }" \
+        "$ALERT_BOT_URL") || true
+      echo "ALERT_STATUS = ${ALERT_STATUS:-none}"
+
+# Release of a plugin version (ops/plugin-release in the SEO WRITING working folder): a version tag (1.13.0) put on main.
+# release-check runs by itself (PHPStan + the version in the header, $version, Stable tag and the changelog).
+# The other jobs are started by hand with the "play" button after release-check is green: the dry runs send nothing,
+# the two uploads publish the version. Masked + protected variables: WPORG_SVN_USER, WPORG_SVN_PASSWORD, GITHUB_TOKEN;
+# the tags "*.*.*" are protected (Settings -> Repository -> Protected tags), so the variables reach these jobs.
+
+release-check:
+  stage: check
+  image: $CHECKER_IMAGE
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/'
+  script:
+    - php8.3 vendor/bin/phpstan --memory-limit=3072M
+    - bash ci/check-version.sh "$CI_COMMIT_TAG" seowriting
+
+release-wordpress-org-dry-run:
+  stage: release
+  image: alpine:3.22
+  needs: [release-check]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+  before_script:
+    - apk add --no-cache bash subversion rsync coreutils
+  script:
+    - bash ci/wporg-release.sh "$CI_COMMIT_TAG" seowriting
+
+release-wordpress-org:
+  stage: release
+  image: alpine:3.22
+  needs: [release-check]
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+  before_script:
+    - apk add --no-cache bash subversion rsync coreutils
+  script:
+    - bash ci/wporg-release.sh "$CI_COMMIT_TAG" seowriting --commit
+
+release-github-dry-run:
+  stage: release
+  image: alpine:3.22
+  needs: [release-check]
+  variables:
+    GIT_DEPTH: "0"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+  before_script:
+    - apk add --no-cache bash git zip curl jq coreutils
+  script:
+    - bash ci/github-release.sh "$CI_COMMIT_TAG"
+
+release-github:
+  stage: release
+  image: alpine:3.22
+  needs: [release-check]
+  variables:
+    GIT_DEPTH: "0"
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^[0-9]+\.[0-9]+\.[0-9]+$/'
+      when: manual
+      allow_failure: true
+  before_script:
+    - apk add --no-cache bash git zip curl jq coreutils
+  script:
+    - bash ci/github-release.sh "$CI_COMMIT_TAG" --commit

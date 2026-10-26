@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.12.9
+ * Version:           1.13.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.12.9';
+        public $version = '1.13.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -531,6 +531,8 @@ if (!class_exists('SEOWriting')) {
                             'result' => 1,
                             'pages' => $this->searchPages(sanitize_text_field($post['q']), isset($post['limit']) ? intval($post['limit']) : 10)
                         ];
+                    } elseif ($action === 'update_post') {
+                        $rs = $this->updatePost($post);
                     } elseif ($action === 'set_css') {
                         $err = $this->setCSS(sanitize_text_field($post['css']));
                         $rs = [
@@ -599,7 +601,9 @@ if (!class_exists('SEOWriting')) {
         }
 
         /**
-         * @param $content
+         * The FAQ block is put back as plain text (str_replace). With preg_replace() the block was the replacement string,
+         * where "$20" means "matched group 20": "under $200" was stored as "under 0"
+         * @param string $content
          * @return string
          */
         private function clearSchemaSection($content)
@@ -609,7 +613,10 @@ if (!class_exists('SEOWriting')) {
                 $html = str_replace('itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage"', 'class="schema-section"', $html);
                 $items = array(' itemscope', ' itemprop="mainEntity"', ' itemprop="text"', ' itemprop="name"', ' itemprop="acceptedAnswer"', ' itemtype="https://schema.org/Question"', ' itemtype="https://schema.org/Answer"');
                 $html = str_replace($items, "", $html);
-                $content = preg_replace('#<section itemscope itemprop="mainEntity" itemtype="https://schema.org/FAQPage">(.*?)</section>#s', $html, $content);
+                $pos = strpos($content, $matches[0]);
+                if ($pos !== false) {
+                    $content = substr_replace($content, $html, $pos, strlen($matches[0]));
+                }
             }
 
             return $content;
@@ -676,10 +683,13 @@ if (!class_exists('SEOWriting')) {
         }
 
         /**
+         * @param string $html
+         * @param bool $anyH3 true: questions may be <h3> with attributes (Super Page), false: plain <h3> only
          * @return array{array<int, string>, array<int, string>, string}|false
          */
-        private function qaList($html)
+        private function qaList($html, $anyH3 = true)
         {
+            $h3 = $anyH3 ? '<h3[^>]*>' : '<h3>';
             if (preg_match('#<section class="schema-section">(.*?)</section>#s', $html, $matches)) {
                 $title = '';
                 $fhtml = $matches[1];
@@ -688,9 +698,9 @@ if (!class_exists('SEOWriting')) {
                     $fhtml = str_replace($titles[0], '', $fhtml);
                 }
                 $fhtml = strip_tags($fhtml, "<h3><p><b>");
-                preg_match_all('#<h3>(.*?)</h3>#s', $fhtml, $questions);
+                preg_match_all('#' . $h3 . '(.*?)</h3>#s', $fhtml, $questions);
                 $questions = $questions[1];
-                $answers = preg_split('#<h3>(.*?)</h3>#s', $fhtml) ?: [];
+                $answers = preg_split('#' . $h3 . '.*?</h3>#s', $fhtml) ?: [];
                 array_shift($answers);
                 foreach ($answers as $idx => $answer) {
                     $answers[$idx] = trim(str_replace(PHP_EOL, "", wp_strip_all_tags($answer)));
@@ -699,6 +709,51 @@ if (!class_exists('SEOWriting')) {
             }
 
             return false;
+        }
+
+        /**
+         * Super Page FAQ: keeps the markup and classes of the section (they carry its styles)
+         * and adds only the FAQPage microdata
+         * @param string $content
+         * @return string
+         */
+        private function addFaqMicrodata($content)
+        {
+            $result = preg_replace_callback('#<section class="schema-section">(.*?)</section>#s', function ($matches) {
+                $html = str_replace(
+                    ['<div class="faq-item">', '<h3 class="faq-question">'],
+                    [
+                        '<div class="faq-item" itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">',
+                        '<h3 class="faq-question" itemprop="name">',
+                    ],
+                    $matches[1]
+                );
+                $html = preg_replace(
+                    [
+                        '#<div class="faq-answer">(.*?)</div>#s',
+                        '#<p class="faq-answer">(.*?)</p>#s',
+                    ],
+                    [
+                        '<div class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><div itemprop="text">$1</div></div>',
+                        '<p class="faq-answer" itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer"><span itemprop="text">$1</span></p>',
+                    ],
+                    $html
+                );
+                if (!is_string($html)) {
+                    return $matches[0];
+                }
+                // never print half of the markup: every question needs its name and its answer
+                $count = substr_count($html, 'itemtype="https://schema.org/Question"');
+                if ($count === 0
+                    || substr_count($html, 'itemprop="name"') !== $count
+                    || substr_count($html, 'itemtype="https://schema.org/Answer"') !== $count
+                ) {
+                    return $matches[0];
+                }
+                return '<section itemscope itemtype="https://schema.org/FAQPage">' . $html . '</section>';
+            }, $content, 1);
+
+            return is_string($result) ? $result : $content;
         }
 
         private function addStyles($content)
@@ -717,7 +772,11 @@ if (!class_exists('SEOWriting')) {
             if ($this->isJSONSchema()) {
                 return $this->addStyles($content);
             }
-            $qa = $this->qaList($content);
+            // Super Page FAQ keeps its own markup: its classes carry the styles
+            $isSuperPage = preg_match('#<section class="schema-section">(.*?)</section>#s', $content, $section)
+                && strpos($section[1], '<div class="faq-item">') !== false
+                && strpos($section[1], '<h3 class="faq-question">') !== false;
+            $qa = $this->qaList($content, $isSuperPage);
             if (!isset($qa[2]) || !isset($qa[0][0]) || !isset($qa[1][0])) {
                 return $this->addStyles($content);
             }
@@ -727,6 +786,9 @@ if (!class_exists('SEOWriting')) {
             $count = count($questions);
 
             $isDisabled = !$this->isMicrodataSchema() && $this->isDisabledSchema();
+            if ($isSuperPage) {
+                return $this->addStyles($isDisabled ? $content : $this->addFaqMicrodata($content));
+            }
             $out = '<section' . ($isDisabled ? '' : ' itemscope itemtype="https://schema.org/FAQPage"') . '>';
             $out .= '<h2>' . $title . '</h2>';
             for ($i = 0; $i < $count; $i++) {
@@ -741,7 +803,12 @@ if (!class_exists('SEOWriting')) {
             }
             $out .= '</section>';
 
-            return $this->addStyles(preg_replace('#<section class="schema-section">(.*?)</section>#s', $out, $content));
+            // $out goes in through a callback: as a replacement string "$20" in an answer would mean "matched group 20"
+            $result = preg_replace_callback('#<section class="schema-section">(.*?)</section>#s', function () use ($out) {
+                return $out;
+            }, $content);
+
+            return $this->addStyles(is_string($result) ? $result : $content);
         }
 
         private function deleteImages($post_id)
@@ -817,7 +884,7 @@ if (!class_exists('SEOWriting')) {
                             set_post_thumbnail($post_id, $attachment_id);
                             $featured_image = false;
 
-                            $html = str_replace($matches[0][$i], '', $html);
+                            $html = $this->removeFeaturedImage($html, $matches[0][$i]);
                         } else {
                             $data['images'][wp_get_attachment_url($attachment_id)] = $attachment_id;
                             $html = str_replace($matches[0][$i],
@@ -839,6 +906,33 @@ if (!class_exists('SEOWriting')) {
             }
         }
 
+        /**
+         * Removes the image that became the featured image, together with the wrapper
+         * (and the caption) that would stay empty without it
+         * @param string $html
+         * @param string $img the <img> tag as it is written in $html
+         * @return string
+         */
+        private function removeFeaturedImage($html, $img)
+        {
+            $tag = preg_quote($img, '#');
+            $result = preg_replace(
+                [
+                    '#<div class="img-container">\s*' . $tag . '\s*(?:<p class="img-caption">(?:(?!</?(?:p|div|section)\b).)*</p>\s*)?</div>#s',
+                    '#<p>\s*' . $tag . '\s*</p>#s',
+                ],
+                '',
+                $html
+            );
+
+            return str_replace($img, '', is_string($result) ? $result : $html);
+        }
+
+        /**
+         * Item 5 of PATCH.md: the time zone of the post date. Both dates are sent (post_date in the time of the site,
+         * post_date_gmt in UTC), a draft stays without a GMT date, edit_date lets an update set the dates,
+         * and a post that is already public is not hidden by a time ahead
+         */
         private function publishPost($user_id, $data)
         {
             global $current_user;
@@ -870,11 +964,19 @@ if (!class_exists('SEOWriting')) {
             }
             $current_user = new WP_User($user_id);
             $post_type = isset($data['post_type']) ? $data['post_type'] : 'post';
+            // post_time is a Unix time. WordPress reads post_date as the local time of the site and post_date_gmt as UTC:
+            // gmdate() in post_date with no post_date_gmt moved the post by the UTC offset of the site
+            // (west of UTC "Publish" became a scheduled post, east of UTC a scheduled post went out early)
+            $post_date_gmt = gmdate('Y-m-d H:i:s', $post_time);
             $new_post = [
                 'post_title' => sanitize_text_field($data['theme']),
                 'post_content' => $content,
                 'post_status' => $post_status,
-                'post_date' => gmdate('Y-m-d H:i:s', $post_time),
+                'post_date' => get_date_from_gmt($post_date_gmt),
+                // a draft keeps the WordPress mark "no date yet": it gets its date when it is published
+                'post_date_gmt' => ($post_status === 'draft') ? '0000-00-00 00:00:00' : $post_date_gmt,
+                // without edit_date wp_update_post() drops both dates when the post to update is still a draft
+                'edit_date' => ($post_status !== 'draft'),
                 'post_author' => $user_id,
                 'post_type' => $post_type,
                 'post_excerpt' => isset($data['excerpt']) && (int)$data['excerpt'] === 1
@@ -925,6 +1027,12 @@ if (!class_exists('SEOWriting')) {
             $is_update = is_array($data) && isset($data['post_id']);
             if ($is_update) {
                 $new_post['ID'] = intval($data['post_id']);
+                // a post that is already public is not taken off the site: with a date ahead WordPress would make it
+                // a scheduled post and hide it until then. Its content is updated, its status and both dates stay
+                if (($post_status === 'future') && (get_post_status($new_post['ID']) === 'publish')) {
+                    $new_post['post_status'] = 'publish';
+                    unset($new_post['post_date'], $new_post['post_date_gmt'], $new_post['edit_date']);
+                }
                 $post_id = wp_update_post($new_post, true);
             } else {
                 $post_id = wp_insert_post($new_post, true);
@@ -965,6 +1073,264 @@ if (!class_exists('SEOWriting')) {
                 'url' => wp_get_shortlink($post_id),
                 'slug' => get_permalink($post_id)
             ];
+        }
+
+        /**
+         * Update of an existing post from the SEO WRITING API (PUT /v1/site/{site_id}/posts/{post_id}), webhook action "update_post".
+         * Only the given fields change: html (post content), post_title, seo_title / seo_description (active SEO plugins).
+         * Status, dates, author, slug, categories, tags, excerpt, featured image and the images attached to the post stay as they are
+         * (publishPost() resets them on an update and downloadImages() deletes the attached images). Images of the new HTML that are
+         * not on this site are downloaded and attached, images already on the site are kept. Before the change the current state is
+         * saved as a revision (when the site keeps revisions), so it can be restored in the WordPress editor.
+         *
+         * @param array<string, mixed> $data
+         * @return array<string, mixed>
+         */
+        private function updatePost($data)
+        {
+            $post_id = (isset($data['post_id']) && is_numeric($data['post_id'])) ? intval($data['post_id']) : 0;
+            $post = ($post_id > 0) ? get_post($post_id) : null;
+            if (!($post instanceof WP_Post)
+                || !in_array($post->post_type, $this->getPostTypes(), true)
+                || in_array($post->post_status, ['trash', 'auto-draft', 'inherit'], true)
+            ) {
+                return [
+                    'result' => 0,
+                    'error' => 'post_not_found',
+                ];
+            }
+
+            $update = ['ID' => $post_id];
+            if (isset($data['html'])) {
+                if (get_post_meta($post_id, '_elementor_edit_mode', true) === 'builder') {
+                    // Elementor shows _elementor_data, not post_content: a new content would not appear on the page
+                    return [
+                        'result' => 0,
+                        'error' => 'page_builder',
+                    ];
+                }
+
+                // wp_kses() removes the <script> / <style> tags but keeps their text: they go with their content first
+                $raw = preg_replace('#<(script|style)\b[^>]*>.*?</\1\s*>#is', '', is_scalar($data['html']) ? (string)$data['html'] : '');
+                $html = wp_kses(
+                    $this->clearSchemaSection(str_replace('itemscope="" itemprop=', 'itemscope itemprop=', is_string($raw) ? $raw : '')),
+                    $this->updateAllowedHtml()
+                );
+                $html = trim($this->removeForeignIframes($html));
+                if ($html === '') {
+                    return [
+                        'result' => 0,
+                        'error' => 'empty_content',
+                    ];
+                }
+
+                @set_time_limit(120);
+                $update['post_content'] = $this->importImages($html, $post_id);
+            }
+
+            if (isset($data['post_title'])) {
+                $title = sanitize_text_field(is_scalar($data['post_title']) ? (string)$data['post_title'] : '');
+                if ($title === '') {
+                    return [
+                        'result' => 0,
+                        'error' => 'empty_title',
+                    ];
+                }
+                $update['post_title'] = $title;
+            }
+
+            $revisions = wp_revisions_enabled($post);
+            $revision_id = 0;
+            if (count($update) > 1) {
+                if ($revisions) {
+                    // the state before the change; skipped by WordPress when the latest revision already has it
+                    $rev = wp_save_post_revision($post_id);
+                    if (is_int($rev) && ($rev > 0)) {
+                        $revision_id = $rev;
+                    } else {
+                        $last = wp_get_post_revisions($post_id, ['numberposts' => 1]);
+                        if (is_array($last) && (count($last) > 0)) {
+                            reset($last);
+                            $revision_id = (int)key($last);
+                        }
+                    }
+                }
+
+                // wp_update_post() keeps every field that is not passed and expects slashed values
+                $rs = wp_update_post(wp_slash($update), true);
+                if (is_wp_error($rs)) {
+                    return [
+                        'result' => 0,
+                        'error' => $rs->get_error_message(),
+                    ];
+                }
+            }
+
+            $seo = [];
+            if (isset($data['seo_title']) || isset($data['seo_description'])) {
+                include_once(__DIR__ . '/classes/post-meta.php');
+                $pm = new \SEOWriting\PostMeta($post_id);
+                $seo = $pm->setSeo(
+                    (isset($data['seo_title']) && is_scalar($data['seo_title'])) ? (string)$data['seo_title'] : null,
+                    (isset($data['seo_description']) && is_scalar($data['seo_description'])) ? (string)$data['seo_description'] : null
+                );
+            }
+
+            return [
+                'result' => 1,
+                'post_id' => $post_id,
+                'url' => get_permalink($post_id),
+                'revision_id' => $revision_id,
+                'revisions' => $revisions ? 1 : 0,
+                'seo' => $seo,
+            ];
+        }
+
+        /**
+         * Tags of an updated post: the ones WordPress allows in posts, plus iframe (removeForeignIframes() keeps YouTube / Vimeo only),
+         * so the video players of an existing post survive an update
+         *
+         * @return array<string, array<string, bool>>
+         */
+        private function updateAllowedHtml()
+        {
+            $allowed = wp_kses_allowed_html('post');
+            $allowed['iframe'] = [
+                'src' => true,
+                'width' => true,
+                'height' => true,
+                'title' => true,
+                'frameborder' => true,
+                'allow' => true,
+                'allowfullscreen' => true,
+                'loading' => true,
+                'referrerpolicy' => true,
+                'style' => true,
+                'class' => true,
+            ];
+            return $allowed;
+        }
+
+        /**
+         * @param string $html
+         * @return string
+         */
+        private function removeForeignIframes($html)
+        {
+            $result = preg_replace_callback('#<iframe\b[^>]*>.*?</iframe>|<iframe\b[^>]*>#is', function ($matches) {
+                if (preg_match('#\ssrc=["\']https://(www\.)?(youtube\.com|youtube-nocookie\.com|player\.vimeo\.com)/#i', $matches[0])) {
+                    return $matches[0];
+                }
+                return '';
+            }, $html);
+            return is_string($result) ? $result : $html;
+        }
+
+        /**
+         * Images of an updated post: one that is not on this site is downloaded into the media library, attached to the post and put
+         * in place of the original tag (as downloadImages()); one already on the site (relative url, the site or uploads host) stays as
+         * it is. A failed download keeps the original tag. At most 10 downloads per update, the rest stay as they are.
+         *
+         * @param string $html
+         * @param int $post_id
+         * @return string
+         */
+        private function importImages($html, $post_id)
+        {
+            if (!preg_match_all('/<img .*src="([^">]+)"[^>]*>/uU', $html, $matches)) {
+                return $html;
+            }
+
+            include_once(ABSPATH . 'wp-admin/includes/image.php');
+            include_once(ABSPATH . 'wp-admin/includes/file.php');
+            include_once(ABSPATH . 'wp-admin/includes/media.php');
+            $api = $this->getAPIClient();
+            $max_downloads = 10;
+            $downloads = 0;
+            $tags = [];
+
+            foreach ($matches[1] as $i => $src) {
+                $url = html_entity_decode($src, ENT_QUOTES, self::MB_ENCODING);
+                if ($this->isLocalImage($url)) {
+                    continue;
+                }
+
+                if (!isset($tags[$url])) {
+                    if ($downloads >= $max_downloads) {
+                        continue;
+                    }
+                    $downloads++;
+                    $tags[$url] = '';
+
+                    $alt = '';
+                    if (preg_match('/ alt="([^"]*)"/u', $matches[0][$i], $_matches)) {
+                        $alt = html_entity_decode($_matches[1], ENT_COMPAT | ENT_HTML401, self::MB_ENCODING);
+                    }
+
+                    $file = $api->loadImage($url, $alt);
+                    if ($file) {
+                        $id = media_handle_sideload($file, $post_id);
+                        $api->deleteImage($file);
+
+                        if (is_wp_error($id)) {
+                            $this->writeLog([
+                                'type' => 'updatePostImageWpError',
+                                'data' => $id->get_error_messages(),
+                            ]);
+                        } else {
+                            if (strlen($alt) > 0) {
+                                update_post_meta($id, '_wp_attachment_image_alt', $alt);
+                            }
+                            $tags[$url] = get_image_tag($id, $alt, $alt, 'center', 'large');
+                        }
+                    } else {
+                        $this->writeLog([
+                            'type' => 'updatePostImageApiError',
+                            'path' => $url,
+                            'data' => $api->error,
+                        ]);
+                    }
+                }
+
+                if ($tags[$url] !== '') {
+                    $html = str_replace($matches[0][$i], $tags[$url], $html);
+                }
+            }
+
+            return $html;
+        }
+
+        /**
+         * True for an image that is already on this site: a relative url, or the host of the site, its home or its uploads
+         * (also a CDN set as the uploads url); "www." is ignored. Urls without a host (data:...) are kept as they are too.
+         *
+         * @param string $url
+         * @return bool
+         */
+        private function isLocalImage($url)
+        {
+            if ((strpos($url, '//') !== 0) && !preg_match('#^[a-z][a-z0-9+.-]*:#i', $url)) {
+                return true;
+            }
+
+            $host = parse_url((strpos($url, '//') === 0) ? 'https:' . $url : $url, PHP_URL_HOST);
+            if (!is_string($host) || ($host === '')) {
+                return true;
+            }
+            $host = preg_replace('/^www\./', '', strtolower($host));
+
+            $own = [home_url(), site_url()];
+            $uploads = wp_upload_dir(null, false);
+            if (is_array($uploads) && !empty($uploads['baseurl'])) {
+                $own[] = $uploads['baseurl'];
+            }
+            foreach ($own as $own_url) {
+                $own_host = parse_url((string)$own_url, PHP_URL_HOST);
+                if (is_string($own_host) && (preg_replace('/^www\./', '', strtolower($own_host)) === $host)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public function onSearchPages($where, $wp_query)
