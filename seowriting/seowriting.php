@@ -1088,7 +1088,7 @@ if (!class_exists('SEOWriting')) {
          */
         private function updatePost($data)
         {
-            $post_id = isset($data['post_id']) ? intval($data['post_id']) : 0;
+            $post_id = (isset($data['post_id']) && is_numeric($data['post_id'])) ? intval($data['post_id']) : 0;
             $post = ($post_id > 0) ? get_post($post_id) : null;
             if (!($post instanceof WP_Post)
                 || !in_array($post->post_type, $this->getPostTypes(), true)
@@ -1111,7 +1111,7 @@ if (!class_exists('SEOWriting')) {
                 }
 
                 $html = wp_kses(
-                    $this->clearSchemaSection(str_replace('itemscope="" itemprop=', 'itemscope itemprop=', (string)$data['html'])),
+                    $this->clearSchemaSection(str_replace('itemscope="" itemprop=', 'itemscope itemprop=', is_scalar($data['html']) ? (string)$data['html'] : '')),
                     $this->updateAllowedHtml()
                 );
                 $html = trim($this->removeForeignIframes($html));
@@ -1127,7 +1127,7 @@ if (!class_exists('SEOWriting')) {
             }
 
             if (isset($data['post_title'])) {
-                $title = sanitize_text_field((string)$data['post_title']);
+                $title = sanitize_text_field(is_scalar($data['post_title']) ? (string)$data['post_title'] : '');
                 if ($title === '') {
                     return [
                         'result' => 0,
@@ -1169,8 +1169,8 @@ if (!class_exists('SEOWriting')) {
                 include_once(__DIR__ . '/classes/post-meta.php');
                 $pm = new \SEOWriting\PostMeta($post_id);
                 $seo = $pm->setSeo(
-                    isset($data['seo_title']) ? (string)$data['seo_title'] : null,
-                    isset($data['seo_description']) ? (string)$data['seo_description'] : null
+                    (isset($data['seo_title']) && is_scalar($data['seo_title'])) ? (string)$data['seo_title'] : null,
+                    (isset($data['seo_description']) && is_scalar($data['seo_description'])) ? (string)$data['seo_description'] : null
                 );
             }
 
