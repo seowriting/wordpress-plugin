@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.12.9
+ * Version:           1.13.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.12.9';
+        public $version = '1.13.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -1110,8 +1110,10 @@ if (!class_exists('SEOWriting')) {
                     ];
                 }
 
+                // wp_kses() removes the <script> / <style> tags but keeps their text: they go with their content first
+                $raw = preg_replace('#<(script|style)\b[^>]*>.*?</\1\s*>#is', '', is_scalar($data['html']) ? (string)$data['html'] : '');
                 $html = wp_kses(
-                    $this->clearSchemaSection(str_replace('itemscope="" itemprop=', 'itemscope itemprop=', is_scalar($data['html']) ? (string)$data['html'] : '')),
+                    $this->clearSchemaSection(str_replace('itemscope="" itemprop=', 'itemscope itemprop=', is_string($raw) ? $raw : '')),
                     $this->updateAllowedHtml()
                 );
                 $html = trim($this->removeForeignIframes($html));
