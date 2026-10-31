@@ -119,7 +119,7 @@ Article generation and semantic indexing for internal linking take place in the 
 
 == Changelog ==
 
-= 1.14.0 (2026/10/31) =
+= 1.14.0 (2026/11/01) =
 
 Feature:
 
