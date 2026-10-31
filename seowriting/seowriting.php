@@ -947,12 +947,12 @@ if (!class_exists('SEOWriting')) {
         /**
          * The downloaded picture ($file of APIClient::loadImage()) as WebP. The same $file when the site can't make WebP, on an
          * error, for a GIF (may be animated) and when the WebP is not smaller; the original temporary file is deleted on success
-         * @param array<string, mixed> $file
-         * @return array<string, mixed>
+         * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file
+         * @return array{name: string, type: string, tmp_name: string, error: int, size: int}
          */
         private function toWebp($file)
         {
-            if (!isset($file['type']) || in_array($file['type'], ['image/webp', 'image/gif'], true)) {
+            if (in_array($file['type'], ['image/webp', 'image/gif'], true)) {
                 return $file;
             }
             $reason = $this->webpUnsupportedReason();
@@ -986,13 +986,13 @@ if (!class_exists('SEOWriting')) {
             }
 
             $size = (int)@filesize($saved['path']);
-            if (($size <= 0) || ($size >= (int)$file['size'])) {
+            if (($size <= 0) || ($size >= $file['size'])) {
                 @wp_delete_file($saved['path']);
                 return $file;
             }
 
             @wp_delete_file($file['tmp_name']);
-            $name = preg_replace('/\.[a-z0-9]+$/i', '', (string)$file['name']);
+            $name = preg_replace('/\.[a-z0-9]+$/i', '', $file['name']);
             return [
                 'name' => sanitize_file_name((is_string($name) && ($name !== '') ? $name : 'image') . '.webp'),
                 'type' => 'image/webp',
