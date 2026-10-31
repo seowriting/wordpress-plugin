@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.13.0
+ * Version:           1.14.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.13.0';
+        public $version = '1.14.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -55,6 +55,7 @@ if (!class_exists('SEOWriting')) {
         const SCHEMA_TYPE_OFF = 'off';
 
         const SEOWRITING_PHP = 'seowriting.php';
+        const WEBP_QUALITY = 82; // the quality WordPress gives JPEG sizes
 
         public function __construct()
         {
@@ -533,6 +534,16 @@ if (!class_exists('SEOWriting')) {
                         ];
                     } elseif ($action === 'update_post') {
                         $rs = $this->updatePost($post);
+                    } elseif ($action === 'check_webp') {
+                        $reason = $this->webpUnsupportedReason();
+                        $rs = ($reason === '') ? [
+                            'result' => 1,
+                            'webp' => 1,
+                        ] : [
+                            'result' => 1,
+                            'webp' => 0,
+                            'reason' => $reason,
+                        ];
                     } elseif ($action === 'set_css') {
                         $err = $this->setCSS(sanitize_text_field($post['css']));
                         $rs = [
@@ -845,6 +856,10 @@ if (!class_exists('SEOWriting')) {
                 include_once(ABSPATH . 'wp-admin/includes/media.php');
                 $api = $this->getAPIClient();
                 $images = [];
+                $webp = !empty($data['webp']);
+                if ($webp) {
+                    add_filter('wp_editor_set_quality', [$this, 'webpQuality'], 10, 2);
+                }
                 foreach ($matches[1] as $i => $path) {
                     $alt = '';
                     if (preg_match('/ alt="([^"]*)"/u', $matches[0][$i], $_matches)) {
@@ -855,6 +870,9 @@ if (!class_exists('SEOWriting')) {
                     if (isset($images[$path])) {
                         $attachment_id = $images[$path];
                     } elseif ($file = $api->loadImage($path, $alt)) {
+                        if ($webp) {
+                            $file = $this->toWebp($file);
+                        }
                         $id = media_handle_sideload($file, $post_id);
                         $api->deleteImage($file);
 
@@ -895,6 +913,10 @@ if (!class_exists('SEOWriting')) {
                     }
                 }
 
+                if ($webp) {
+                    remove_filter('wp_editor_set_quality', [$this, 'webpQuality'], 10);
+                }
+
                 if (count($images) > 0) {
                     wp_update_post([
                         'ID' => $post_id,
@@ -904,6 +926,92 @@ if (!class_exists('SEOWriting')) {
 
                 $data['html'] = $html;
             }
+        }
+
+        /**
+         * Why this site can't make WebP pictures: 'old_wordpress' (WordPress < 5.8 does not allow WebP uploads), 'no_editor'
+         * (GD / Imagick of the server without WebP); '' when it can
+         * @return string
+         */
+        private function webpUnsupportedReason()
+        {
+            if (!in_array('image/webp', get_allowed_mime_types(), true)) {
+                return 'old_wordpress';
+            }
+            if (!function_exists('wp_image_editor_supports') || !wp_image_editor_supports(['mime_type' => 'image/webp'])) {
+                return 'no_editor';
+            }
+            return '';
+        }
+
+        /**
+         * The downloaded picture ($file of APIClient::loadImage()) as WebP. The same $file when the site can't make WebP, on an
+         * error, for a GIF (may be animated) and when the WebP is not smaller; the original temporary file is deleted on success
+         * @param array{name: string, type: string, tmp_name: string, error: int, size: int} $file
+         * @return array{name: string, type: string, tmp_name: string, error: int, size: int}
+         */
+        private function toWebp($file)
+        {
+            if (in_array($file['type'], ['image/webp', 'image/gif'], true)) {
+                return $file;
+            }
+            $reason = $this->webpUnsupportedReason();
+            if ($reason !== '') {
+                $this->writeLog([
+                    'type' => 'webpUnsupported',
+                    'data' => $reason,
+                ]);
+                return $file;
+            }
+
+            $editor = wp_get_image_editor($file['tmp_name'], [
+                'mime_type' => $file['type'],
+                'output_mime_type' => 'image/webp',
+            ]);
+            if (is_wp_error($editor)) {
+                $this->writeLog([
+                    'type' => 'webpEditorError',
+                    'data' => $editor->get_error_messages(),
+                ]);
+                return $file;
+            }
+            $editor->set_quality(self::WEBP_QUALITY);
+            $saved = $editor->save($file['tmp_name'] . '.webp', 'image/webp');
+            if (is_wp_error($saved) || empty($saved['path']) || !file_exists($saved['path'])) {
+                $this->writeLog([
+                    'type' => 'webpSaveError',
+                    'data' => is_wp_error($saved) ? $saved->get_error_messages() : '',
+                ]);
+                return $file;
+            }
+
+            $size = (int)@filesize($saved['path']);
+            if (($size <= 0) || ($size >= $file['size'])) {
+                @wp_delete_file($saved['path']);
+                return $file;
+            }
+
+            @wp_delete_file($file['tmp_name']);
+            $name = preg_replace('/\.[a-z0-9]+$/i', '', $file['name']);
+            return [
+                'name' => sanitize_file_name((is_string($name) && ($name !== '') ? $name : 'image') . '.webp'),
+                'type' => 'image/webp',
+                'tmp_name' => $saved['path'],
+                'error' => UPLOAD_ERR_OK,
+                'size' => $size,
+            ];
+        }
+
+        /**
+         * wp_editor_set_quality while our pictures are added as WebP: the sizes WordPress cuts from them get WEBP_QUALITY
+         * (WordPress gives WebP 86 by default)
+         * @param int $quality
+         * @param string $mime_type
+         * @return int
+         */
+        public function webpQuality($quality, $mime_type)
+        {
+            return ($mime_type === 'image/webp') ? self::WEBP_QUALITY : $quality;
         }
 
         /**
@@ -1125,7 +1233,7 @@ if (!class_exists('SEOWriting')) {
                 }
 
                 @set_time_limit(120);
-                $update['post_content'] = $this->importImages($html, $post_id);
+                $update['post_content'] = $this->importImages($html, $post_id, !empty($data['webp']));
             }
 
             if (isset($data['post_title'])) {
@@ -1233,9 +1341,10 @@ if (!class_exists('SEOWriting')) {
          *
          * @param string $html
          * @param int $post_id
+         * @param bool $webp the pictures go into the media library as WebP when the site can make WebP (toWebp())
          * @return string
          */
-        private function importImages($html, $post_id)
+        private function importImages($html, $post_id, $webp = false)
         {
             if (!preg_match_all('/<img .*src="([^">]+)"[^>]*>/uU', $html, $matches)) {
                 return $html;
@@ -1269,7 +1378,14 @@ if (!class_exists('SEOWriting')) {
 
                     $file = $api->loadImage($url, $alt);
                     if ($file) {
+                        if ($webp) {
+                            $file = $this->toWebp($file);
+                            add_filter('wp_editor_set_quality', [$this, 'webpQuality'], 10, 2);
+                        }
                         $id = media_handle_sideload($file, $post_id);
+                        if ($webp) {
+                            remove_filter('wp_editor_set_quality', [$this, 'webpQuality'], 10);
+                        }
                         $api->deleteImage($file);
 
                         if (is_wp_error($id)) {
