@@ -873,7 +873,7 @@ if (!class_exists('SEOWriting')) {
          *
          * @param array<string, array<string, string>> $images_meta of imagesMeta()
          * @param string $src
-         * @return array<string, string> [] when the picture has none
+         * @return array<string, string> empty when the picture has none
          */
         private function imageMeta($images_meta, $src)
         {
