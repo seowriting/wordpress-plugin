@@ -846,8 +846,8 @@ if (!class_exists('SEOWriting')) {
          * title (the heading of its section), caption, description. [] when the request has none (an article without the
          * option, an older SEO WRITING)
          *
-         * @param array $data
-         * @return array
+         * @param array<string, mixed> $data
+         * @return array<string, array<string, string>>
          */
         private function imagesMeta($data)
         {
@@ -871,9 +871,9 @@ if (!class_exists('SEOWriting')) {
         /**
          * The fields of one picture: the src of its tag is matched as it is and decoded
          *
-         * @param array $images_meta of imagesMeta()
+         * @param array<string, array<string, string>> $images_meta of imagesMeta()
          * @param string $src
-         * @return array [] when the picture has none
+         * @return array<string, string> [] when the picture has none
          */
         private function imageMeta($images_meta, $src)
         {
@@ -888,7 +888,7 @@ if (!class_exists('SEOWriting')) {
          * Name of the picture's file (APIClient::loadImage() makes it safe): its title in lower case without accents
          * ("O Que Muda nos Nutrientes das Nozes" -> o-que-muda-nos-nutrientes-das-nozes.jpg), else its alt as before
          *
-         * @param array $meta of imageMeta()
+         * @param array<string, string> $meta of imageMeta()
          * @param string $alt
          * @return string
          */
@@ -905,7 +905,7 @@ if (!class_exists('SEOWriting')) {
          * Title, caption and description of the picture in the Media Library (the alt is set by the caller)
          *
          * @param int $attachment_id
-         * @param array $meta of imageMeta()
+         * @param array<string, string> $meta of imageMeta()
          */
         private function setImageFields($attachment_id, $meta)
         {
