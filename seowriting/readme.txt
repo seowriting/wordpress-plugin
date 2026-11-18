@@ -4,7 +4,7 @@ Tags: seo writing, AI tool, AI writing, generation text
 Tested up to: 7.1.1
 Requires at least: 4.9
 Requires PHP: 7.1
-Stable tag: 1.14.0
+Stable tag: 1.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,12 @@ This plugin connects to the SEO WRITING service at https://seowriting.ai/api/v1/
 Article generation and semantic indexing for internal linking take place in the SEO WRITING service. Site article content is processed there to find related pages. Please review the service's [Terms of Service](https://seowriting.ai/terms-of-service) and [Privacy Policy](https://seowriting.ai/privacy-policy).
 
 == Changelog ==
+
+= 1.15.0 (2026/11/18) =
+
+Feature:
+
+* Image title, caption, description and file name in the Media Library from SEO WRITING (the "Adds an image title, caption and description" option of a publication)
 
 = 1.14.0 (2026/11/01) =
 
