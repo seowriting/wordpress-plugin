@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.14.0
+ * Version:           1.15.0
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.14.0';
+        public $version = '1.15.0';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -841,6 +841,89 @@ if (!class_exists('SEOWriting')) {
             }
         }
 
+        /**
+         * Field images_meta of a publish request (SEO WRITING option "Image title, caption and description"): picture address =>
+         * title (the heading of its section), caption, description. [] when the request has none (an article without the
+         * option, an older SEO WRITING)
+         *
+         * @param array<string, mixed> $data
+         * @return array<string, array<string, string>>
+         */
+        private function imagesMeta($data)
+        {
+            $meta = [];
+            if (!isset($data['images_meta']) || !is_array($data['images_meta'])) {
+                return $meta;
+            }
+            foreach ($data['images_meta'] as $row) {
+                if (!is_array($row) || !isset($row['src']) || !is_scalar($row['src'])) {
+                    continue;
+                }
+                $meta[(string)$row['src']] = [
+                    'title' => (isset($row['title']) && is_scalar($row['title'])) ? sanitize_text_field((string)$row['title']) : '',
+                    'caption' => (isset($row['caption']) && is_scalar($row['caption'])) ? sanitize_text_field((string)$row['caption']) : '',
+                    'description' => (isset($row['description']) && is_scalar($row['description'])) ? sanitize_textarea_field((string)$row['description']) : '',
+                ];
+            }
+            return $meta;
+        }
+
+        /**
+         * The fields of one picture: the src of its tag is matched as it is and decoded
+         *
+         * @param array<string, array<string, string>> $images_meta of imagesMeta()
+         * @param string $src
+         * @return array<string, string> empty when the picture has none
+         */
+        private function imageMeta($images_meta, $src)
+        {
+            if (isset($images_meta[$src])) {
+                return $images_meta[$src];
+            }
+            $decoded = html_entity_decode($src, ENT_QUOTES, self::MB_ENCODING);
+            return isset($images_meta[$decoded]) ? $images_meta[$decoded] : [];
+        }
+
+        /**
+         * Name of the picture's file (APIClient::loadImage() makes it safe): its title in lower case without accents
+         * ("O Que Muda nos Nutrientes das Nozes" -> o-que-muda-nos-nutrientes-das-nozes.jpg), else its alt as before
+         *
+         * @param array<string, string> $meta of imageMeta()
+         * @param string $alt
+         * @return string
+         */
+        private function imageFileName($meta, $alt)
+        {
+            if (empty($meta['title'])) {
+                return $alt;
+            }
+            $name = remove_accents($meta['title']);
+            return function_exists('mb_strtolower') ? mb_strtolower($name, self::MB_ENCODING) : strtolower($name);
+        }
+
+        /**
+         * Title, caption and description of the picture in the Media Library (the alt is set by the caller)
+         *
+         * @param int $attachment_id
+         * @param array<string, string> $meta of imageMeta()
+         */
+        private function setImageFields($attachment_id, $meta)
+        {
+            $post = ['ID' => $attachment_id];
+            if (!empty($meta['title'])) {
+                $post['post_title'] = $meta['title'];
+            }
+            if (!empty($meta['caption'])) {
+                $post['post_excerpt'] = $meta['caption'];
+            }
+            if (!empty($meta['description'])) {
+                $post['post_content'] = $meta['description'];
+            }
+            if (count($post) > 1) {
+                wp_update_post(wp_slash($post));
+            }
+        }
+
         private function downloadImages(&$data, $post_id, $featured_image, $is_update = false)
         {
             $html = $data['html'];
@@ -856,6 +939,7 @@ if (!class_exists('SEOWriting')) {
                 include_once(ABSPATH . 'wp-admin/includes/media.php');
                 $api = $this->getAPIClient();
                 $images = [];
+                $images_meta = $this->imagesMeta($data);
                 $webp = !empty($data['webp']);
                 if ($webp) {
                     add_filter('wp_editor_set_quality', [$this, 'webpQuality'], 10, 2);
@@ -865,11 +949,12 @@ if (!class_exists('SEOWriting')) {
                     if (preg_match('/ alt="([^"]*)"/u', $matches[0][$i], $_matches)) {
                         $alt = html_entity_decode($_matches[1], ENT_COMPAT | ENT_HTML401, self::MB_ENCODING);
                     }
+                    $meta = $this->imageMeta($images_meta, $path);
 
                     $attachment_id = 0;
                     if (isset($images[$path])) {
                         $attachment_id = $images[$path];
-                    } elseif ($file = $api->loadImage($path, $alt)) {
+                    } elseif ($file = $api->loadImage($path, $this->imageFileName($meta, $alt))) {
                         if ($webp) {
                             $file = $this->toWebp($file);
                         }
@@ -888,6 +973,7 @@ if (!class_exists('SEOWriting')) {
                             if (strlen($alt) > 0) {
                                 update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt);
                             }
+                            $this->setImageFields($attachment_id, $meta);
                         }
                     } else {
                         $this->writeLog([
