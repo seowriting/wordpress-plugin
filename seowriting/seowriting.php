@@ -8,7 +8,7 @@
  * @wordpress-plugin
  * Plugin Name:       SEOWriting
  * Description:       SEOWriting - AI Writing Tool Plugin For Text Generation
- * Version:           1.15.0
+ * Version:           1.15.1
  * Author:            SEOWriting
  * Author URI:        https://seowriting.ai/?utm_source=wp_plugin
  * License:           GPL-2.0 or later
@@ -27,7 +27,7 @@ if (!class_exists('SEOWriting')) {
     {
         public $plugin_slug;
         public $plugin_path;
-        public $version = '1.15.0';
+        public $version = '1.15.1';
         /**
          * @var \SEOWriting\APIClient|null
          */
@@ -104,7 +104,8 @@ if (!class_exists('SEOWriting')) {
             }
 
             add_action('rest_api_init', [$this, 'initRest']);
-            add_filter('wp_kses_allowed_html', [$this, 'ksesAllowedHtml'], 10, 2);
+            // no global wp_kses_allowed_html filter: the extra tags of ksesAllowedHtml() are added only while
+            // a post from the signed webhook is saved (withImportKses()), never for comments, widgets or other posts
 
             add_filter('the_content', [$this, 'onContent'], 20);
             add_action("wp_head", [$this, 'printJSONLD'], 20);
@@ -239,6 +240,33 @@ if (!class_exists('SEOWriting')) {
             $this->getAPIClient()->update($this->version);
         }
 
+        /**
+         * Runs $callback with the extra tags of ksesAllowedHtml() in the 'post' KSES context, then removes them.
+         * The content of the webhook is saved without a logged-in user, so core's content_save_pre KSES filter
+         * also sanitises it with the 'post' list: the tags must be there during the save, and only then.
+         *
+         * @template T
+         * @param callable(): T $callback
+         * @return T
+         */
+        private function withImportKses($callback)
+        {
+            add_filter('wp_kses_allowed_html', [$this, 'ksesAllowedHtml'], 10, 2);
+            try {
+                return $callback();
+            } finally {
+                remove_filter('wp_kses_allowed_html', [$this, 'ksesAllowedHtml'], 10);
+            }
+        }
+
+        /**
+         * Tags of the content imported from SEOWriting. Hooked only through withImportKses().
+         * No on* event handler attributes: they are JavaScript.
+         *
+         * @param array<string, mixed> $allowed
+         * @param mixed $context
+         * @return array<string, mixed>
+         */
         public function ksesAllowedHtml($allowed, $context)
         {
             if (!is_array($context) && ($context === 'post')) {
@@ -259,7 +287,6 @@ if (!class_exists('SEOWriting')) {
                     'referrerpolicy' => true,
                     'sandbox' => true,
                     'title' => true,
-                    'onload' => true,
                     'class' => true
                 ];
                 $allowed['input'] = [
@@ -470,7 +497,9 @@ if (!class_exists('SEOWriting')) {
                     ];
 
                     if ($action === 'post') {
-                        $rs = $this->publishPost($settings['user_id'], $post);
+                        $rs = $this->withImportKses(function () use ($settings, $post) {
+                            return $this->publishPost($settings['user_id'], $post);
+                        });
                     } elseif (($action === 'connect') && isset($post['api_key'])) {
                         $this->setSettings([
                             'api_key' => sanitize_text_field($post['api_key']),
@@ -533,7 +562,9 @@ if (!class_exists('SEOWriting')) {
                             'pages' => $this->searchPages(sanitize_text_field($post['q']), isset($post['limit']) ? intval($post['limit']) : 10)
                         ];
                     } elseif ($action === 'update_post') {
-                        $rs = $this->updatePost($post);
+                        $rs = $this->withImportKses(function () use ($post) {
+                            return $this->updatePost($post);
+                        });
                     } elseif ($action === 'check_webp') {
                         $reason = $this->webpUnsupportedReason();
                         $rs = ($reason === '') ? [
@@ -924,6 +955,51 @@ if (!class_exists('SEOWriting')) {
             }
         }
 
+        /**
+         * The picture of the Media Library in place of its <img> of the request. A picture with a caption (SEO WRITING option
+         * "Image title, caption and description": <figure class="sw-image"><img><figcaption>) on a site with a classic theme
+         * becomes a picture with a caption the way WordPress itself inserts one: [caption id="attachment_N" align="aligncenter"
+         * width="W"]<img> caption[/caption]. The classic editor and the Classic block show it as one picture with its caption
+         * (a bare <figure> looked like a quote there, client 844058, 19.11.2026) and the theme styles it as its own captions.
+         * A block theme does not limit the width of [caption] to the text (Twenty Twenty-Five: 1024 px on a 760 px column), and
+         * the split to Elementor drops shortcodes, so there the <figure> stays
+         *
+         * @param string $html
+         * @param string $img the <img> tag of the request
+         * @param int $attachment_id
+         * @param string $alt
+         * @param array<string, string> $meta of imageMeta()
+         * @return string
+         */
+        private function placeImage($html, $img, $attachment_id, $alt, $meta)
+        {
+            $tag = get_image_tag($attachment_id, $alt, $alt, 'center', 'large');
+            $caption = isset($meta['caption']) ? trim($meta['caption']) : '';
+            if (($caption !== '') && $this->classicCaptions()
+                && preg_match('#<figure class="sw-image"[^>]*>\s*' . preg_quote($img, '#') . '\s*<figcaption[^>]*>.*?</figcaption>\s*</figure>#su', $html, $figure)
+            ) {
+                $text = str_replace(['[', ']'], ['&#91;', '&#93;'], esc_html($caption));
+                $captioned = image_add_caption($tag, $attachment_id, $text, $alt, 'center', '', 'large', $alt);
+                if ($captioned !== $tag) {
+                    return str_replace($figure[0], $captioned, $html);
+                }
+            }
+            return str_replace($img, $tag, $html);
+        }
+
+        /**
+         * Captions of SEO WRITING pictures go into the post as [caption] (placeImage()): a classic theme, no split to Elementor
+         *
+         * @return bool
+         */
+        private function classicCaptions()
+        {
+            if (function_exists('wp_is_block_theme') && wp_is_block_theme()) {
+                return false;
+            }
+            return get_option('seowriting_split_to_elementor') !== 'yes';
+        }
+
         private function downloadImages(&$data, $post_id, $featured_image, $is_update = false)
         {
             $html = $data['html'];
@@ -991,10 +1067,7 @@ if (!class_exists('SEOWriting')) {
                             $html = $this->removeFeaturedImage($html, $matches[0][$i]);
                         } else {
                             $data['images'][wp_get_attachment_url($attachment_id)] = $attachment_id;
-                            $html = str_replace($matches[0][$i],
-                                get_image_tag($attachment_id, $alt, $alt, 'center', 'large'),
-                                $html
-                            );
+                            $html = $this->placeImage($html, $matches[0][$i], $attachment_id, $alt, $meta);
                         }
                     }
                 }
