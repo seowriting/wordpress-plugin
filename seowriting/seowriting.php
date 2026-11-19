@@ -924,6 +924,51 @@ if (!class_exists('SEOWriting')) {
             }
         }
 
+        /**
+         * The picture of the Media Library in place of its <img> of the request. A picture with a caption (SEO WRITING option
+         * "Image title, caption and description": <figure class="sw-image"><img><figcaption>) on a site with a classic theme
+         * becomes a picture with a caption the way WordPress itself inserts one: [caption id="attachment_N" align="aligncenter"
+         * width="W"]<img> caption[/caption]. The classic editor and the Classic block show it as one picture with its caption
+         * (a bare <figure> looked like a quote there, client 844058, 19.11.2026) and the theme styles it as its own captions.
+         * A block theme does not limit the width of [caption] to the text (Twenty Twenty-Five: 1024 px on a 760 px column), and
+         * the split to Elementor drops shortcodes, so there the <figure> stays
+         *
+         * @param string $html
+         * @param string $img the <img> tag of the request
+         * @param int $attachment_id
+         * @param string $alt
+         * @param array<string, string> $meta of imageMeta()
+         * @return string
+         */
+        private function placeImage($html, $img, $attachment_id, $alt, $meta)
+        {
+            $tag = get_image_tag($attachment_id, $alt, $alt, 'center', 'large');
+            $caption = isset($meta['caption']) ? trim($meta['caption']) : '';
+            if (($caption !== '') && $this->classicCaptions()
+                && preg_match('#<figure class="sw-image"[^>]*>\s*' . preg_quote($img, '#') . '\s*<figcaption[^>]*>.*?</figcaption>\s*</figure>#su', $html, $figure)
+            ) {
+                $text = str_replace(['[', ']'], ['&#91;', '&#93;'], esc_html($caption));
+                $captioned = image_add_caption($tag, $attachment_id, $text, $alt, 'center', '', 'large', $alt);
+                if ($captioned !== $tag) {
+                    return str_replace($figure[0], $captioned, $html);
+                }
+            }
+            return str_replace($img, $tag, $html);
+        }
+
+        /**
+         * Captions of SEO WRITING pictures go into the post as [caption] (placeImage()): a classic theme, no split to Elementor
+         *
+         * @return bool
+         */
+        private function classicCaptions()
+        {
+            if (function_exists('wp_is_block_theme') && wp_is_block_theme()) {
+                return false;
+            }
+            return get_option('seowriting_split_to_elementor') !== 'yes';
+        }
+
         private function downloadImages(&$data, $post_id, $featured_image, $is_update = false)
         {
             $html = $data['html'];
@@ -991,10 +1036,7 @@ if (!class_exists('SEOWriting')) {
                             $html = $this->removeFeaturedImage($html, $matches[0][$i]);
                         } else {
                             $data['images'][wp_get_attachment_url($attachment_id)] = $attachment_id;
-                            $html = str_replace($matches[0][$i],
-                                get_image_tag($attachment_id, $alt, $alt, 'center', 'large'),
-                                $html
-                            );
+                            $html = $this->placeImage($html, $matches[0][$i], $attachment_id, $alt, $meta);
                         }
                     }
                 }
